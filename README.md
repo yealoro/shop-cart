@@ -8,30 +8,29 @@ NextJs + NestJs Online Shop Web Application
 - NestJS CLI (`npm i -g @nestjs/cli`)
 
 ## Estructura del Proyecto
-
 shop-cart/
-├── frontend/ # Aplicación Next.js
-│ ├── app/
-│ │ ├── components/ # Componentes reutilizables
-│ │ ├── lib/ # Utilidades y configuraciones
-│ │ ├── api/ # Rutas de API
-│ │ └── (routes)/ # Páginas y rutas
-│ ├── public/ # Archivos estáticos
-│ ├── styles/ # Estilos globales
-│ ├── types/ # Definiciones TypeScript
-│ ├── next.config.js
-│ └── package.json
+├── frontend/                  # Aplicación Next.js
+│   ├── app/
+│   │   ├── components/       # Componentes reutilizables
+│   │   ├── lib/             # Utilidades y configuraciones
+│   │   ├── api/             # Rutas de API
+│   │   └── (routes)/        # Páginas y rutas
+│   ├── public/              # Archivos estáticos
+│   ├── styles/              # Estilos globales
+│   ├── types/              # Definiciones TypeScript
+│   ├── next.config.js
+│   └── package.json
 │
-├── backend/ # Aplicación NestJS
-│ ├── src/
-│ │ ├── main.ts # Punto de entrada
-│ │ ├── app.module.ts # Módulo principal
-│ │ ├── modules/ # Módulos de la aplicación
-│ │ ├── common/ # Código compartido
-│ │ └── config/ # Configuraciones
-│ ├── test/ # Tests
-│ ├── nest-cli.json
-│ └── package.json
+├── backend/                  # Aplicación NestJS
+│   ├── src/
+│   │   ├── main.ts          # Punto de entrada
+│   │   ├── app.module.ts    # Módulo principal
+│   │   ├── modules/         # Módulos de la aplicación
+│   │   ├── common/          # Código compartido
+│   │   └── config/          # Configuraciones
+│   ├── test/                # Tests
+│   ├── nest-cli.json
+│   └── package.json
 
 ## Configuración Inicial
 
