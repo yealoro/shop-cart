@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Product } from './product.entity';
 
@@ -17,17 +17,24 @@ export class ProductsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.productsService.findOne(id);
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(+id);
+  }
+
+  @Get(':id/price')
+  async getPrice(@Param('id') id: string, @Query('quantity') quantity: string) {
+    const qty = quantity ? parseInt(quantity) : 1;
+    const price = await this.productsService.calculateFinalPrice(+id, qty);
+    return { price };
   }
 
   @Put(':id')
-  update(@Param('id') id: number, @Body() product: Partial<Product>) {
-    return this.productsService.update(id, product);
+  update(@Param('id') id: string, @Body() product: Product) {
+    return this.productsService.update(+id, product);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.productsService.remove(id);
+  remove(@Param('id') id: string) {
+    return this.productsService.remove(+id);
   }
 }

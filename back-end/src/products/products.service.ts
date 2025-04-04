@@ -1,43 +1,72 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './product.entity';
-import { InjectRepository } from '@nestjs/typeorm';
+import { PromotionsService } from '../promotions/promotions.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
-    private productRepository: Repository<Product>,
+    private productsRepository: Repository<Product>,
+    private promotionsService: PromotionsService,
   ) {}
 
-  async create(product: Product): Promise<Product> {
-    return this.productRepository.save(product);
-  }
-
   async findAll(): Promise<Product[]> {
-    return this.productRepository.find();
+    return this.productsRepository.find({
+      relations: ['category', 'variants', 'images', 'promotions'],
+    });
   }
 
   async findOne(id: number): Promise<Product> {
-    const product = await this.productRepository.findOne({ where: { id } });
-    if (!product) {
-      throw new NotFoundException('Producto no encontrado');
-    }
-    return product;
+    return this.productsRepository.findOne({
+      where: { id },
+      relations: ['category', 'variants', 'images', 'promotions'],
+    });
   }
 
-  async update(id: number, product: Partial<Product>): Promise<Product> {
-    const updatedProduct = await this.productRepository.update(id, product);
-    if (updatedProduct.affected === 0) {
-      throw new NotFoundException('Producto no encontrado');
-    }
+  async create(product: Product): Promise<Product> {
+    return this.productsRepository.save(product);
+  }
+
+  async update(id: number, product: Product): Promise<Product> {
+    await this.productsRepository.update(id, product);
     return this.findOne(id);
-  } 
+  }
 
   async remove(id: number): Promise<void> {
-    const result = await this.productRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException('Producto no encontrado');
+    await this.productsRepository.delete(id);
+  }
+
+  // Método para calcular el precio final considerando descuentos y promociones
+  async calculateFinalPrice(productId: number, quantity: number = 1): Promise<number> {
+    const product = await this.findOne(productId);
+    if (!product) return 0;
+
+    // Verificar si aplica precio mayorista
+    if (quantity >= product.wholesaleMinQuantity && product.wholesalePrice) {
+      return product.wholesalePrice;
     }
+
+    // Verificar si hay promociones activas
+    const activePromotions = await this.promotionsService.findByProduct(productId);
+    if (activePromotions && activePromotions.length > 0) {
+      // Usar la promoción con mayor descuento
+      let bestPrice = product.price;
+      for (const promotion of activePromotions) {
+        const promotionPrice = this.promotionsService.calculateFinalPrice(product.price, promotion);
+        if (promotionPrice < bestPrice) {
+          bestPrice = promotionPrice;
+        }
+      }
+      return bestPrice;
+    }
+
+    // Si no hay promociones activas pero hay descuento en el producto
+    if (product.discount > 0) {
+      return product.price * (1 - product.discount / 100);
+    }
+
+    return product.price;
   }
 }
