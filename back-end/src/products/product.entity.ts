@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Category } from '../categories/category.entity';
 import { Variant } from '../variants/variant.entity';
 import { Image } from '../images/image.entity';
 import { Review } from '../reviews/review.entity';
 import { SEO } from '../seo/seo.entity';
+import { Promotion } from '../promotions/promotion.entity';
 
 @Entity()
 export class Product {
@@ -35,11 +36,18 @@ export class Product {
   @Column()
   abc: string;
 
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column({ default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   discount: number;
+
+  // Nuevos campos para gestión de precios
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  wholesalePrice: number;
+
+  @Column({ default: 5, nullable: true })
+  wholesaleMinQuantity: number;
 
   @Column({ default: 1 })
   stock: number;
@@ -55,4 +63,7 @@ export class Product {
 
   @OneToMany(() => SEO, (seo) => seo.product)
   seoData: SEO[];
+
+  @OneToMany(() => Promotion, (promotion) => promotion.product)
+  promotions: Promotion[];
 }

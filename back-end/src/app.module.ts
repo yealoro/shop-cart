@@ -7,6 +7,7 @@ import { StockModule } from './stock/stock.module';
 import { ImagesModule } from './images/images.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SeoModule } from './seo/seo.module';
+import { PromotionsModule } from './promotions/promotions.module';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -30,6 +31,7 @@ dotenv.config();
     ImagesModule,
     ReviewsModule,
     SeoModule,
+    PromotionsModule,
   ],
 })
 export class AppModule {}
