@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { Category } from './category.entity';
 
@@ -9,6 +9,11 @@ export class CategoriesController {
   @Get()
   findAll() {
     return this.categoriesService.findAll();
+  }
+
+  @Get('featured')
+  findFeatured() {
+    return this.categoriesService.findFeatured();
   }
 
   @Get(':id')
