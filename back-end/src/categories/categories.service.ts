@@ -16,6 +16,15 @@ export class CategoriesService {
     });
   }
 
+  async findFeatured(): Promise<Category[]> {
+    return this.categoriesRepository.find({
+      where: {
+        featured: true,
+      },
+      relations: ['products'],
+    });
+  }
+
   async findOne(id: number): Promise<Category> {
     return this.categoriesRepository.findOne({
       where: { id },

@@ -32,19 +32,18 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 
-
-interface Product {
+interface Category {
   id: number
   name: string
-  description: string
-  price: number
+  description?: string
   imageUrl?: string
-  hasSales?: boolean
-  active?: boolean
+  parentCategoryId?: number
+  featured: boolean
+  products?: any[]
 }
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
+export default function CategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
   const [deleteMessage, setDeleteMessage] = useState("")
@@ -52,82 +51,71 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchCategories() {
       try {
-        const response = await fetch("http://localhost:3300/products")
+        const response = await fetch("http://localhost:3300/categories")
         if (!response.ok) {
-          throw new Error("Failed to fetch products")
+          throw new Error("Failed to fetch categories")
         }
         const data = await response.json()
-        setProducts(data)
+        setCategories(data)
       } catch (error) {
-        console.error("Error fetching products:", error)
-        toast.error("Failed to load products. Please try again.")
+        console.error("Error fetching categories:", error)
+        toast.error("Failed to load categories. Please try again.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProducts()
+    fetchCategories()
   }, [])
 
-  const handleDeleteClick = (productId: number) => {
-    // Find the product to check if it has sales
-    const product = products.find((p) => p.id === productId)
-    if (product?.hasSales) {
-      setDeleteMessage("This product has sales and can only be deactivated, not deleted.")
+  const handleDeleteClick = (categoryId: number) => {
+    // Find the category to check if it has products
+    const category = categories.find((c) => c.id === categoryId)
+    if (category?.products && category.products.length > 0) {
+      setDeleteMessage("This category has associated products and cannot be deleted.")
     } else {
-      setDeleteMessage("Are you sure you want to delete this product? This action cannot be undone.")
+      setDeleteMessage("Are you sure you want to delete this category? This action cannot be undone.")
     }
-    setConfirmDelete(productId)
+    setConfirmDelete(categoryId)
   }
 
   const handleConfirmDelete = async () => {
     if (!confirmDelete) return
 
     setDeleteStatus("loading")
-    const product = products.find((p) => p.id === confirmDelete)
+    const category = categories.find((c) => c.id === confirmDelete)
 
     try {
-      if (product?.hasSales) {
-        // Deactivate product
-        const response = await fetch(`http://localhost:3300/products/${confirmDelete}/deactivate`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ active: false }),
-        })
-
-        if (!response.ok) throw new Error("Failed to deactivate product")
-
-        // Update local state
-        setProducts(products.map((p) => (p.id === confirmDelete ? { ...p, active: false } : p)))
-
-        toast.success("Product successfully deactivated.")
+      if (category?.products && category.products.length > 0) {
+        // Cannot delete category with products
+        toast.error("Cannot delete a category with associated products.")
+        setDeleteStatus("error")
+        setDeleteMessage("This category has associated products and cannot be deleted.")
       } else {
-        // Delete product
-        const response = await fetch(`http://localhost:3300/products/${confirmDelete}`, {
+        // Delete category
+        const response = await fetch(`http://localhost:3300/categories/${confirmDelete}`, {
           method: "DELETE",
         })
 
-        if (!response.ok) throw new Error("Failed to delete product")
+        if (!response.ok) throw new Error("Failed to delete category")
 
         // Remove from local state
-        setProducts(products.filter((p) => p.id !== confirmDelete))
+        setCategories(categories.filter((c) => c.id !== confirmDelete))
 
-        toast.success("Product successfully deleted.")
+        toast.success("Category successfully deleted.")
+        setDeleteStatus("success")
+        
+        // Close the dialog after a short delay
+        setTimeout(() => {
+          setConfirmDelete(null)
+          setDeleteStatus("idle")
+          setDeleteMessage("")
+        }, 1000)
       }
-
-      setDeleteStatus("success")
-      // Close the dialog after a short delay
-      setTimeout(() => {
-        setConfirmDelete(null)
-        setDeleteStatus("idle")
-        setDeleteMessage("")
-      }, 1000)
     } catch (error) {
-      console.error("Error deleting/deactivating product:", error)
+      console.error("Error deleting category:", error)
       setDeleteStatus("error")
       setDeleteMessage("An error occurred. Please try again.")
       toast.error("Failed to process your request. Please try again.")
@@ -140,45 +128,48 @@ export default function ProductsPage() {
     setDeleteStatus("idle")
   }
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredCategories = categories.filter(
+    (category) =>
+      category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const getStatusBadge = (product: Product) => {
-    if (product.active === false) {
+  const getStatusBadge = (category: Category) => {
+    if (category.featured) {
       return (
-        <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-          Inactive
+        <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+          Featured
         </Badge>
       )
     }
-    if (product.hasSales) {
+    if (category.parentCategoryId) {
       return (
-        <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-          Has Sales
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+          Subcategory
         </Badge>
       )
     }
     return (
-      <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-        Active
+      <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+        Main Category
       </Badge>
     )
   }
+  // Al inicio del componente CategoriesPage
+const categoryToDelete = categories.find((c) => c.id === confirmDelete);
+const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="flex h-16 items-center px-6">
-          <h1 className="text-xl font-semibold">Products</h1>
+          <h1 className="text-xl font-semibold">Categories</h1>
           <div className="ml-auto flex items-center gap-4">
-            <Link href="/products/create" passHref>
+            <Link href="/categories/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add New Product
+                Add New Category
               </Button>
             </Link>
           </div>
@@ -192,7 +183,7 @@ export default function ProductsPage() {
           <div className="relative max-w-sm">
             <Input
               type="search"
-              placeholder="Search products..."
+              placeholder="Search categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
@@ -218,68 +209,61 @@ export default function ProductsPage() {
           <div className="flex h-[400px] items-center justify-center">
             <div className="text-center">
               <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              <p className="text-muted-foreground">Loading products...</p>
+              <p className="text-muted-foreground">Loading categories...</p>
             </div>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : filteredCategories.length === 0 ? (
           <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-            <h3 className="mt-4 text-lg font-semibold">No products found</h3>
+            <h3 className="mt-4 text-lg font-semibold">No categories found</h3>
             <p className="mb-4 mt-2 text-sm text-muted-foreground">
-              {searchQuery ? "Try a different search term or" : "Get started by"} adding a new product.
+              {searchQuery ? "Try a different search term or" : "Get started by"} adding a new category.
             </p>
-            <Link href="/products/create" passHref>
+            <Link href="/categories/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add New Product
+                Add New Category
               </Button>
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {filteredProducts.map((product) => (
+            {filteredCategories.map((category) => (
               <Card
-                key={product.id}
-                className={`overflow-hidden transition-opacity ${product.active === false ? "opacity-60" : ""}`}
+                key={category.id}
+                className="overflow-hidden transition-opacity"
               >
                 <div className="aspect-square w-full h-32 bg-gray-100 dark:bg-gray-800">
-                  {product.imageUrl ? (
+                  {category.imageUrl ? (
                     <img
-                      src={product.imageUrl}
-                      alt={product.name}
+                      src={category.imageUrl}
+                      alt={category.name}
                       className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gray-100 dark:bg-gray-800">
                       <div className="text-center">
-                        <div className="text-3xl text-gray-400">📷</div>
-                        <p className="mt-1 text-xs text-gray-500">{product.name}</p>
+                        <div className="text-3xl text-gray-400">🏷️</div>
+                        <p className="mt-1 text-xs text-gray-500">{category.name}</p>
                       </div>
                     </div>
                   )}
                 </div>
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between">
-                    <h2 className="font-semibold text-sm">{product.name}</h2>
+                    <h2 className="font-semibold text-sm">{category.name}</h2>
                     <div className="scale-90 origin-right">
-                      {getStatusBadge(product)}
+                      {getStatusBadge(category)}
                     </div>
                   </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{product.description}</p>
-                  <p className="mt-1 text-sm font-bold">
-                    ${(() => {
-                      try {
-                        return typeof product.price === 'number' 
-                          ? product.price.toFixed(2) 
-                          : Number(product.price).toFixed(2);
-                      } catch (e) {
-                        console.error(`Error formatting price for product ${product.id}:`, e);
-                        return product.price || '0.00';
-                      }
-                    })()}
-                  </p>
+                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{category.description || "No description available"}</p>
+                  {category.products && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {category.products.length} {category.products.length === 1 ? "product" : "products"}
+                    </p>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between border-t p-1">
-                  <Link href={`/products/edit/${product.id}`} passHref>
+                  <Link href={`/categories/edit/${category.id}`} passHref>
                     <Button variant="outline" size="sm" className="h-7 text-xs px-2">
                       <Edit className="mr-1 h-3 w-3" />
                       Edit
@@ -307,14 +291,14 @@ export default function ProductsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                      <DropdownMenuItem>View Products</DropdownMenuItem>
+                      <DropdownMenuItem>Create Subcategory</DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
-                        onClick={() => handleDeleteClick(product.id)}
+                        onClick={() => handleDeleteClick(category.id)}
                       >
-                        {product.hasSales ? "Deactivate" : "Delete"}
+                        Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -325,7 +309,7 @@ export default function ProductsPage() {
         )}
 
         {/* Pagination */}
-        {filteredProducts.length > 0 && (
+        {filteredCategories.length > 0 && (
           <div className="mt-6">
             <Pagination>
               <PaginationContent>
@@ -352,13 +336,11 @@ export default function ProductsPage() {
         )}
       </main>
 
-      {/* Delete/Deactivate Confirmation Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={confirmDelete !== null} onOpenChange={(open) => !open && handleCancelDelete()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {products.find((p) => p.id === confirmDelete)?.hasSales ? "Deactivate Product" : "Delete Product"}
-            </DialogTitle>
+            <DialogTitle>Delete Category</DialogTitle>
             <DialogDescription>{deleteMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -367,37 +349,28 @@ export default function ProductsPage() {
               Cancel
             </Button>
             <Button
-              variant={products.find((p) => p.id === confirmDelete)?.hasSales ? "default" : "destructive"}
-              onClick={handleConfirmDelete}
-              disabled={deleteStatus === "loading"}
+            variant="destructive"
+            onClick={handleConfirmDelete}
+            disabled={deleteStatus === "loading" || hasProducts}
             >
-              {deleteStatus === "loading" ? (
+            {deleteStatus === "loading" ? (
                 <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                  Processing...
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Processing...
                 </>
-              ) : products.find((p) => p.id === confirmDelete)?.hasSales ? (
+            ) : (
                 <>
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Deactivate
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
                 </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </>
-              )}
+            )}
             </Button>
           </DialogFooter>
           {deleteStatus === "success" && (
             <div className="mt-2 rounded-md bg-green-50 p-3 text-green-800 dark:bg-green-900/50 dark:text-green-300">
               <div className="flex items-center">
                 <Check className="mr-2 h-4 w-4" />
-                <p>
-                  {products.find((p) => p.id === confirmDelete)?.hasSales
-                    ? "Product deactivated successfully."
-                    : "Product deleted successfully."}
-                </p>
+                <p>Category deleted successfully.</p>
               </div>
             </div>
           )}
@@ -414,4 +387,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-

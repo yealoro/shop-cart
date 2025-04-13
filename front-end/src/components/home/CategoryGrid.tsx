@@ -1,13 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import Navigation from "@/components/Navigation";
-import AnnouncementBanner from "@/components/home/AnnouncementBanner";
-import HeroBanner from "@/components/home/HeroBanner";
-import CategoryGrid from "@/components/home/CategoryGrid";
 import { toast } from "sonner";
+import CategoryCard from "./CategoryCard";
 
 interface Category {
   id: number;
@@ -18,7 +13,7 @@ interface Category {
   featured: boolean;
 }
 
-export default function Home() {
+export default function CategoryGrid() {
   const [featuredCategories, setFeaturedCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,15 +40,33 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <AnnouncementBanner />
-      <Navigation />
-      
-      {/* Spacer para evitar saltos cuando la navegación se vuelve fixed */}
-      <div className="h-[76px] md:h-[84px] hidden" id="nav-spacer"></div>
-      
-      <HeroBanner />
-      <CategoryGrid />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 md:px-8 py-8">
+      {loading ? (
+        // Loading skeleton
+        Array(3).fill(0).map((_, index) => (
+          <div key={index} className="aspect-square bg-gray-200 animate-pulse relative">
+            <div className="absolute inset-0 bg-black/10 flex items-end p-6">
+              <div className="h-8 bg-gray-300 w-3/4 rounded"></div>
+            </div>
+          </div>
+        ))
+      ) : featuredCategories.length > 0 ? (
+        // Display fetched categories
+        featuredCategories.map((category) => (
+          <CategoryCard 
+            key={category.id}
+            id={category.id}
+            name={category.name}
+            imageUrl={category.imageUrl}
+          />
+        ))
+      ) : (
+        // Fallback if no categories found
+        <div className="col-span-3 py-12 text-center">
+          <h3 className="text-xl font-semibold text-gray-700">No categories found</h3>
+          <p className="mt-2 text-gray-500">Check back soon for our product categories!</p>
+        </div>
+      )}
     </div>
   );
 }
