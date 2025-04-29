@@ -17,8 +17,11 @@ export default function CategoryCard({ id, name, imageUrl }: CategoryCardProps) 
     setImageError(true);
   };
 
+  // Crear un slug a partir del nombre de la categoría
+  const categorySlug = name.toLowerCase().replace(/\s+/g, '-');
+
   return (
-    <Link href={`/categories/${id}`} className="relative overflow-hidden group">
+    <Link href={`/categories/${categorySlug}`} className="relative overflow-hidden group">
       <div className="aspect-square bg-gray-200 relative">
         {imageUrl && !imageError ? (
           <Image 
@@ -31,11 +34,11 @@ export default function CategoryCard({ id, name, imageUrl }: CategoryCardProps) 
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-600">
-            <span className="text-6xl">🏷️</span>
+            <span className="text-4xl">🏷️</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-black/30 flex items-end p-6">
-          <h2 className="text-white text-3xl font-bold">{name}</h2>
+        <div className="absolute inset-0 bg-black/30 flex items-end p-3">
+          <h2 className="text-white text-lg sm:text-xl font-bold">{name}</h2>
         </div>
       </div>
     </Link>

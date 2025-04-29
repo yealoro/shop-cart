@@ -17,8 +17,11 @@ export class Product {
   @Column('text')
   description: string;
 
+  @Column('categoryId') 
+  categoryId: number;
+
   @ManyToOne(() => Category, (category) => category.products)
-  @JoinColumn()
+  @JoinColumn({ name: 'categoryId' })
   category: Category;
 
   @OneToMany(() => Variant, (variant) => variant.product)
@@ -33,8 +36,7 @@ export class Product {
   @Column()
   sku: string;
 
-  @Column()
-  abc: string;
+  // abc field removed
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
@@ -66,4 +68,7 @@ export class Product {
 
   @OneToMany(() => Promotion, (promotion) => promotion.product)
   promotions: Promotion[];
+
+  @Column({ nullable: true, unique: true })
+  slug: string;
 }

@@ -18,11 +18,26 @@ export class ProductsService {
     });
   }
 
+  async findByCategory(categoryId: number): Promise<Product[]> {
+    return this.productsRepository.find({
+      where: { category: { id: categoryId } },
+      relations: ['category', 'variants', 'images', 'promotions'],
+    });
+  }
+
   async findOne(id: number): Promise<Product> {
     return this.productsRepository.findOne({
       where: { id },
       relations: ['category', 'variants', 'images', 'promotions'],
     });
+  }
+
+  async findBySlug(slug: string): Promise<Product | undefined> {
+    const products = await this.productsRepository.find({
+      where: { slug: slug },
+      relations: ['category', 'variants', 'images', 'promotions'],
+    });
+    return products[0]; // Return the first found product or undefined
   }
 
   async create(product: Product): Promise<Product> {

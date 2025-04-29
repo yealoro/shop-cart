@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Category } from './category.entity';
 
 @Injectable()
@@ -30,6 +30,13 @@ export class CategoriesService {
       where: { id },
       relations: ['products'],
     });
+  }
+
+  async findByName(name: string): Promise<Category | undefined> { // Return undefined if not found
+    const categories = await this.categoriesRepository.findBy({ // Await the promise
+      name: ILike(`%${name}%`),
+    });
+    return categories[0]; // Return the first found category or undefined
   }
 
   async create(category: Category): Promise<Category> {

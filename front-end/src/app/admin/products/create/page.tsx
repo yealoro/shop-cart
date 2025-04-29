@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Interfaz para categorías
+interface Category {
+  id: number;
+  name: string;
+}
 
 export default function CreateProductPage() {
   const router = useRouter();
@@ -20,16 +27,37 @@ export default function CreateProductPage() {
     imageUrl: '',
     status: 'Active',
     sku: '',
-    abc: '',
     discount: '0',
     brand: '',
     manufacturer: '',
     supplier: '',
-    // We'll handle category, variants, images, reviews, and seoData separately if needed
+    categoryId: '', // Añadido campo para la categoría
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [imagePreview, setImagePreview] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Cargar categorías al montar el componente
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch("http://localhost:3300/categories");
+        if (!response.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -41,10 +69,33 @@ export default function CreateProductPage() {
     }
   };
 
+  // Manejador específico para el cambio de categoría
+  const handleCategoryChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, categoryId: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validar que se haya seleccionado una categoría
+    if (!formData.categoryId) {
+      setError('Please select a category for this product');
+      setLoading(false);
+      return;
+    }
+
+    // Crear objeto con los datos a enviar
+    const productData = {
+      ...formData,
+      price: parseFloat(formData.price),
+      stock: parseInt(formData.stock, 10),
+      discount: parseFloat(formData.discount),
+      categoryId: parseInt(formData.categoryId, 10), // Convertir a número
+    };
+
+    console.log('Sending product data:', productData); // Log para depuración
 
     try {
       const response = await fetch('http://localhost:3300/products', {
@@ -52,30 +103,32 @@ export default function CreateProductPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price),
-          stock: parseInt(formData.stock, 10),
-          discount: parseFloat(formData.discount),
-        }),
+        body: JSON.stringify(productData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create product');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to create product: ${errorText}`);
       }
 
-      router.push('/products');
+      const createdProduct = await response.json();
+      console.log('Created product:', createdProduct); // Log para verificar la respuesta
+
+      router.push('/admin/products');
     } catch (err) {
+      console.error('Error details:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  // Resto del componente con el formulario...
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <div className="mb-6 flex items-center">
-        <Link href="/products" className="text-sm text-gray-500 hover:text-gray-700 flex items-center">
+        <Link href="/admin/products" className="text-sm text-gray-500 hover:text-gray-700 flex items-center">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Products
         </Link>
@@ -114,6 +167,27 @@ export default function CreateProductPage() {
                   rows={4}
                   className="mt-1"
                 />
+              </div>
+
+              {/* Selector de categoría */}
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select 
+                  value={formData.categoryId} 
+                  onValueChange={handleCategoryChange}
+                  disabled={loadingCategories}
+                >
+                  <SelectTrigger id="category" className="mt-1">
+                    <SelectValue placeholder={loadingCategories ? "Loading categories..." : "Select a category"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -185,110 +259,97 @@ export default function CreateProductPage() {
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="abc">ABC</Label>
-                  <Input
-                    type="text"
-                    id="abc"
-                    name="abc"
-                    value={formData.abc}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="brand">Brand</Label>
-                  <Input
-                    type="text"
-                    id="brand"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Input
-                    type="text"
-                    id="manufacturer"
-                    name="manufacturer"
-                    value={formData.manufacturer}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="supplier">Supplier</Label>
-                  <Input
-                    type="text"
-                    id="supplier"
-                    name="supplier"
-                    value={formData.supplier}
-                    onChange={handleChange}
-                    className="mt-1"
-                  />
-                </div>
               </div>
             </div>
           </Card>
 
-          {/* Right Column - Product Image */}
+          {/* Right Column - Additional Information */}
           <Card className="p-6 shadow-sm">
-            <h2 className="text-lg font-medium mb-4">Product Image</h2>
+            <h2 className="text-lg font-medium mb-4">Additional Information</h2>
             
             <div className="space-y-4">
               <div>
                 <Label htmlFor="imageUrl">Image URL</Label>
                 <Input
-                  type="url"
+                  type="text"
                   id="imageUrl"
                   name="imageUrl"
                   value={formData.imageUrl}
                   onChange={handleChange}
-                  placeholder="https://example.com/image.jpg"
                   className="mt-1"
                 />
               </div>
 
-              <div className="mt-4 aspect-square w-full bg-gray-100 flex items-center justify-center rounded-md overflow-hidden">
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Product preview"
-                    className="h-full w-full object-cover"
-                    onError={() => setImagePreview('')}
-                  />
-                ) : (
-                  <div className="text-center p-4">
-                    <div className="text-4xl text-gray-400 mb-2">📷</div>
-                    <p className="text-sm text-gray-500">No image preview available</p>
-                    <p className="text-xs text-gray-400">Enter a valid image URL above</p>
+              {imagePreview && (
+                <div className="mt-2">
+                  <Label>Image Preview</Label>
+                  <div className="mt-1 border rounded-md overflow-hidden h-48 flex items-center justify-center bg-gray-50">
+                    <img
+                      src={imagePreview}
+                      alt="Product preview"
+                      className="max-h-full max-w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://via.placeholder.com/300x300?text=Image+Error";
+                      }}
+                    />
                   </div>
-                )}
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="brand">Brand</Label>
+                <Input
+                  type="text"
+                  id="brand"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="manufacturer">Manufacturer</Label>
+                <Input
+                  type="text"
+                  id="manufacturer"
+                  name="manufacturer"
+                  value={formData.manufacturer}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="supplier">Supplier</Label>
+                <Input
+                  type="text"
+                  id="supplier"
+                  name="supplier"
+                  value={formData.supplier}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Footer with buttons */}
-        <div className="mt-6 flex justify-end gap-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => router.push('/products')}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="bg-black text-white hover:bg-gray-800"
-          >
-            {loading ? 'Creating...' : 'Create Product'}
+        <div className="mt-6 flex justify-end space-x-4">
+          <Link href="/admin/products">
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </Link>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                Creating...
+              </>
+            ) : (
+              "Create Product"
+            )}
           </Button>
         </div>
       </form>
