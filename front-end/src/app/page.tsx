@@ -1,13 +1,9 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
+"use client"
 import Navigation from "@/components/Navigation";
 import HeroBanner from "@/components/home/HeroBanner";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import ShopCTA from "@/components/home/ShopCTA";
-import { toast } from "sonner";
+import Footer from "@/components/Footer";
 
 interface Category {
   id: number;
@@ -27,6 +23,7 @@ export default function Home() {
       <HeroBanner />
       <CategoryGrid />
       <ShopCTA />
+      <Footer />
     </div>
   );
 }

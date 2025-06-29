@@ -1,7 +1,9 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, X, ShoppingCart, User } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 import AccountIcon from "./icon/AccountIcon";
 import CartIcon from "./icon/CartIcon";
 import MenuIcon from "./icon/MenuIcon";
@@ -13,6 +15,14 @@ import AnnouncementBanner from "./AnnouncementBanner";
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+  const { getItemCount } = useCart();
+  
+  // Add this useEffect to handle client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Mensajes para el banner de anuncios
   const announcementMessages = [
@@ -65,12 +75,7 @@ export default function Navigation() {
       <AnnouncementBanner messages={announcementMessages} interval={6000} />
       
       <header 
-        className={`w-full py-4 px-4 sm:px-6 md:px-8 md:m-10 lg:px-52 flex items-center justify-between transition-all duration-300 ease-in-out z-50
-          ${isScrolled 
-            ? 'fixed top-0 bg-white/95 dark:bg-black/95 ' 
-            : 'bg-transparent relative'
-          }`}
-      >
+        className="w-full py-4 px-4 sm:px-6 md:px-8 md:my-10 lg:px-52 flex items-center justify-between z-50">
       
         {/* Mobile Menu Button */}
         <button 
@@ -85,9 +90,9 @@ export default function Navigation() {
         <div className="hidden md:flex items-center gap-8">
           {/* Main Navigation */}
           <nav className="hidden md:flex gap-6 text-lg">
-            <Link href="/" className="hover:opacity-70 font-medium">Home</Link>
-            <Link href="/vtuber-collabs" className="hover:opacity-70 font-medium">Vtuber Collabs</Link>
-            <Link href="/ara-artists" className="hover:opacity-70 font-medium">Ara Artists</Link>
+            <Link href="/" className="hover:opacity-70 font-medium">Inicio</Link>
+            <Link href="/categories/stickers" className="hover:opacity-70 font-medium">Stickers</Link>
+            <Link href="/categories/camisetas" className="hover:opacity-70 font-medium">Camisetas</Link>
           </nav>
         </div>
 
@@ -107,96 +112,112 @@ export default function Navigation() {
         {/* Right Nav */}
         <div className="flex items-center gap-4">
           <nav className="hidden md:flex gap-6 text-lg">
-            <Link href="/policies" className="hover:opacity-70 font-medium">Policies</Link>
-            <Link href="/about-us" className="hover:opacity-70 font-medium">About Us</Link>
-            <Link href="/ara-vtuber" className="hover:opacity-70 font-medium">Ara Vtuber</Link>
+            <Link href="/categories/mousepads" className="hover:opacity-70 font-medium">Mouse Pads</Link>
+            <Link href="/about-us" className="hover:opacity-70 font-medium">Cuadros</Link>
+            <Link href="/ara-vtuber" className="hover:opacity-70 font-medium">Sobre Nosotros</Link>
           </nav>
           
           {/* Account and Cart Icons - Visible on all screens */}
           <div className="flex gap-4 items-center">
-            <button aria-label="Account" className="text-xl">
+            <Link href="/login" aria-label="Account" className="text-xl">
               <AccountIcon />
-            </button>
-            <button aria-label="Cart" className="text-xl">
+            </Link>
+            <Link href="/cart" className="text-xl relative">
               <CartIcon />
-            </button>
+              {/* Only render the badge on the client after component has mounted */}
+              {isMounted && getItemCount() > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                  {getItemCount()}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Overlay - REWRITTEN */}
       <div 
         className={`fixed inset-0 bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
           isMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex justify-center items-center p-4 border-b">
-          <div></div> {/* Espacio vacío para alinear el botón de cierre a la derecha */}
+        <div className="flex items-center justify-between p-4 border-b">
+          {/* Logo inside mobile menu */}
+          <Link href="/" className="flex-shrink-0" onClick={() => setIsMenuOpen(false)}>
+            <img 
+              src="/logo.webp" 
+              alt="Deco House Logo" 
+              width={80} 
+              height={32}
+              className="w-[60px] h-[60px]" // Smaller logo for mobile menu
+            />
+          </Link>
+          {/* Close Button */}
           <button 
             onClick={toggleMenu}
-            aria-label="Close menu"
-            className="text-2xl"
+            aria-label="Cerrar menú"
+            className="text-2xl p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <CloseIcon />
           </button>
         </div>
-        <nav className="flex flex-col p-4">
+        <nav className="flex flex-col p-4 overflow-y-auto h-[calc(100%-64px)]"> {/* Adjust height based on header height */}
           <Link 
             href="/" 
-            className="py-4 border-b text-base font-normal"
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Home
+            Inicio
           </Link>
           <Link 
-            href="/vtuber-collabs" 
-            className="py-4 border-b text-base font-normal"
+            href="/categories/stickers" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Vtuber Collabs
+            Stickers
           </Link>
           <Link 
-            href="/ara-artists" 
-            className="py-4 border-b text-base font-normal"
+            href="/categories/camisetas" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Ara Artists
+            Camisetas
           </Link>
           <Link 
-            href="/policies" 
-            className="py-4 border-b text-base font-normal"
+            href="/categories/mousepads" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Policies
+            Mouse Pads
           </Link>
           <Link 
             href="/about-us" 
-            className="py-4 border-b text-base font-normal"
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            About Us
+            Sobre Nosotros
           </Link>
           <Link 
             href="/ara-vtuber" 
-            className="py-4 border-b text-base font-normal"
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
             Ara Vtuber
           </Link>
           <Link 
             href="/login" 
-            className="py-4 border-b text-base font-normal"
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Log in
+            Iniciar Sesión
           </Link>
           
           {/* Social Media Icons */}
-          <div className="flex justify-center gap-8 mt-8">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-4 border">
+          <div className="flex justify-center gap-6 mt-8 p-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-pink-500 transition-colors">
               <InstagramIcon />
             </a>
-            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="p-4 border">
+            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors">
               <TiktokIcon />
             </a>
           </div>

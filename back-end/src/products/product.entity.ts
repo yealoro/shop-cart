@@ -24,10 +24,10 @@ export class Product {
   @JoinColumn({ name: 'categoryId' })
   category: Category;
 
-  @OneToMany(() => Variant, (variant) => variant.product)
+  @OneToMany(() => Variant, (variant) => variant.product, { cascade: true })
   variants: Variant[];
 
-  @OneToMany(() => Image, (image) => image.product)
+  @OneToMany(() => Image, (image) => image.product, { cascade: true })
   images: Image[];
 
   @OneToMany(() => Review, (review) => review.product)
@@ -36,23 +36,20 @@ export class Product {
   @Column()
   sku: string;
 
-  // abc field removed
-
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   discount: number;
 
-  // Nuevos campos para gestión de precios
+  @Column({ default: 1 })
+  stock: number;
+
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   wholesalePrice: number;
 
   @Column({ default: 5, nullable: true })
   wholesaleMinQuantity: number;
-
-  @Column({ default: 1 })
-  stock: number;
 
   @Column()
   brand: string;

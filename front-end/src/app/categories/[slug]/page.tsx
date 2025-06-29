@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -16,16 +15,22 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { StarIcon, HeartIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/context/CartContext"; // Import useCart hook
 
 interface Product {
   id: number;
   name: string;
   description: string;
-  price: number;
-  imageUrl?: string;
+  price: number; // Assuming this is the FINAL price after discount
+  originalPrice?: number; // Add original price if available
+  discountPercentage?: number; // Add discount percentage
+  rating?: number; // Add rating
+  imageUrl?: string; // Or images?: { url: string }[];
   categoryId: number;
   active?: boolean;
-  slug?: string; // Add slug to the Product interface
+  slug?: string; 
 }
 
 interface Category {
@@ -44,15 +49,32 @@ export default function CategoryProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const { addItem } = useCart(); // Use the addItem function from cart context
+  useEffect(() => {
+    async function fetchCategory() {
+      try {
+        setLoading(true);
+        const categoriesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`)
+        if (!categoriesResponse.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        const categoriesData = await categoriesResponse.json();
+        setCategory(categoriesData);
+       } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load categories. Please try again.");
+       } finally {
+        setLoading(false);
+       }
+      }
+      fetchCategory();
+    }, []);
   useEffect(() => {
     async function fetchCategoryAndProducts() {
       try {
         setLoading(true);
-        
-        
         // Fetch products for this category
-        const productsResponse = await fetch(`http://localhost:3300/products/category/${categorySlug}`);
+        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/category/${categorySlug}`);
         if (!productsResponse.ok) {
           throw new Error("Failed to fetch products");
         }
@@ -150,67 +172,105 @@ export default function CategoryProductsPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <Link 
-                href={`/products/${product.slug || product.id}`} 
-                key={product.id}
-              >
-                <Card className="overflow-hidden h-full transition-all duration-200 hover:shadow-md border-0 bg-transparent">
-                  <div className="relative">
-                    {/* Product badge */}
-                    <div className="absolute top-2 left-2 z-10">
-                      <div className="bg-black text-white text-xs px-2 py-1 rounded-sm">
-                       SALE
-                      </div>
-                    </div>
-                    
-                    {/* Product image */}
-                    <div className="aspect-square w-full bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 relative">
-                      {product.imageUrl ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <div className="text-center">
-                            <div className="text-3xl text-gray-400">📷</div>
-                          </div>
-                        </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"> {/* Adjusted grid columns for potentially smaller cards */}
+            {filteredProducts.map((product) => {
+              // Calculate if there is a discount to show
+              const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+              const discountValue = product.discountPercentage ?? (hasDiscount ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100) : 0);
+
+              return (
+                <Link 
+                  href={`/products/${product.slug || product.id}`} 
+                  key={product.id}
+                  className="group" // Add group for potential hover effects on buttons
+                >
+                  <Card className="overflow-hidden h-full transition-shadow duration-200 hover:shadow-lg border rounded-lg flex flex-col"> {/* Added rounded-lg and flex */}
+                    <div className="relative">
+                      {/* Discount Badge */}
+                      {hasDiscount && discountValue > 0 && (
+                        <Badge 
+                          variant="destructive" // Use destructive variant for red color
+                          className="absolute top-2 left-2 z-10 rounded-full px-2 py-0.5 text-xs" // Adjusted styling
+                        >
+                          -{discountValue}%
+                        </Badge>
                       )}
                       
-                      {/* Size badge - positioned at bottom right */}
-                      <div className="absolute bottom-2 right-2 bg-white dark:bg-gray-800 text-black dark:text-white text-xs px-2 py-1 rounded-sm">
-                        SIZE<br />4.7"x6"
+                      {/* Wishlist Button */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute top-1 right-1 z-10 h-8 w-8 rounded-full bg-white/70 hover:bg-white dark:bg-black/50 dark:hover:bg-black"
+                        onClick={(e) => { e.preventDefault(); /* Add wishlist logic */ toast.info("Added to wishlist (placeholder)"); }}
+                      >
+                        <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      </Button>
+                      
+                      {/* Product image */}
+                      <div className="aspect-square w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" // Added hover effect
+                          />
+                        ) : (
+                          // Placeholder similar to the image
+                          <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-gray-600">
+                             {/* Placeholder Icon - You can use an SVG or an icon library */}
+                             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  
-                  <CardContent className="p-3 pt-4">
-                    {/* Product name with colored bar */}
-                    <div className="flex items-center mb-2">
-                      <p className="font-semibold text-lg line-clamp-1">{product.name}</p>
-                    </div>
                     
-                    {/* Price */}
-                    <p className="text-sm font-normal">
-                      ${(() => {
-                        try {
-                          return typeof product.price === 'number' 
-                            ? product.price.toFixed(2) 
-                            : Number(product.price).toFixed(2);
-                        } catch (e) {
-                          console.error(`Error formatting price for product ${product.id}:`, e);
-                          return product.price || '0.00';
-                        }
-                      })()}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    <CardContent className="p-3 flex-grow flex flex-col justify-between"> {/* Adjusted padding and flex */}
+                      <div> {/* Top part of content */}
+                        {/* Rating */}
+                        {product.rating && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <StarIcon className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                            <span>{product.rating.toFixed(1)}</span>
+                          </div>
+                        )}
+                        
+                        {/* Product name */}
+                        <p className="font-medium text-xl leading-tight line-clamp-2 mb-2">{product.name}</p>
+                      </div>
+
+                      {/* Bottom part of content (Price and Cart Button) */}
+                      <div className="flex items-end justify-between mt-auto pt-2">
+                        {/* Price */}
+                        <div>
+                          {hasDiscount && product.originalPrice != null && (
+                            <p className="text-xs text-muted-foreground line-through">
+                              ${(+product.originalPrice).toFixed(2)} 
+                            </p>
+                          )}
+                          <p className={`font-semibold ${hasDiscount ? 'text-red-600' : 'text-foreground'}`}>
+                            ${product.price != null ? (+product.price).toFixed(2) : 'N/A'} 
+                          </p>
+                        </div>
+                        
+                        {/* Add to Cart Button */}
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            addItem(product, 1); // Add 1 quantity of the product to cart
+                            toast.success(`${product.name} added to cart!`);
+                          }}
+                        >
+                          <ShoppingCartIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
 

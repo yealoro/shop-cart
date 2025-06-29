@@ -6,16 +6,15 @@ import Link from "next/link";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; // Import Badge for stock status
+import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/context/CartContext";
 
-// --- EDIT 1: Update Product Interface ---
 interface Image {
   id: number;
   url: string;
   altText?: string;
 }
 
-// --- EDIT 1: Ensure Product interface includes slug ---
 interface Product {
   id: number;
   name: string;
@@ -27,14 +26,15 @@ interface Product {
   stock: number;
   brand?: string;
   discount?: number;
-  slug: string; // Add slug field if not already present
+  slug: string;
+  colors?: string[]; // Añadido para colores disponibles
+  sizes?: string[]; // Añadido para tallas disponibles
 }
-// --- END EDIT 1 ---
 
 interface Category {
   id: number;
   name: string;
-  slug?: string; // Add slug to Category interface
+  slug?: string;
 }
 
 export default function ProductDetailPage() {
@@ -44,6 +44,15 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
+
+  // Colores y tallas de ejemplo (reemplazar con datos reales del producto)
+  const availableColors = ["white", "black", "blue"];
+  const availableSizes = ["S", "M", "L", "XL"];
 
   useEffect(() => {
     async function fetchProductDetails() {
@@ -58,11 +67,11 @@ export default function ProductDetailPage() {
         setLoading(true);
          
         // First try to fetch by slug (since we're in [slug]/page.tsx)
-        let productResponse = await fetch(`http://localhost:3300/products/slug/${productSlug}`);
+        let productResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/slug/${productSlug}`);
         
         // If not found by slug and it's numeric, try by ID
         if (!productResponse.ok && /^\d+$/.test(productSlug)) {
-          productResponse = await fetch(`http://localhost:3300/products/${productSlug}`);
+          productResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productSlug}`);
         }
         
         // If still not found
@@ -79,12 +88,17 @@ export default function ProductDetailPage() {
         }
         
         const productData = await productResponse.json();
-        console.log("Product data received:", productData); // Para depuración
+        console.log("Product data received:", productData);
         setProduct(productData);
+
+        // Establecer la imagen seleccionada por defecto
+        if (productData.images && productData.images.length > 0) {
+          setSelectedImage(productData.images[0].url);
+        }
 
         // Fetch category details
         if (productData.categoryId) {
-          const categoryResponse = await fetch(`http://localhost:3300/categories/${productData.categoryId}`);
+          const categoryResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${productData.categoryId}`);
           if (categoryResponse.ok) {
             const categoryData = await categoryResponse.json();
             setCategory(categoryData);
@@ -105,6 +119,38 @@ export default function ProductDetailPage() {
       fetchProductDetails();
     }
   }, [productSlug]);
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+  };
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size);
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    if (!selectedColor || !selectedSize) {
+      toast.error("Please select color and size");
+      return;
+    }
+    
+    addItem(product, quantity, selectedColor, selectedSize);
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    
+    if (!selectedColor || !selectedSize) {
+      toast.error("Please select color and size");
+      return;
+    }
+    
+    addItem(product, quantity, selectedColor, selectedSize);
+    // Navigate to cart page
+    window.location.href = "/cart";
+  };
 
   if (loading) {
     return (
@@ -137,145 +183,193 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Ensure useEffect fetches the updated product structure including images, stock, brand, discount
-
-  // --- EDIT 2: Helper to get primary image URL ---
-  const getPrimaryImageUrl = () => {
-    if (product?.images && product.images.length > 0) {
-      // Assuming the first image is the primary one
-      return product.images[0].url;
-    }
-    // return product?.imageUrl; // Fallback if you still use single imageUrl
-    return null; // No image available
-  };
-  const primaryImageUrl = getPrimaryImageUrl();
-  // --- END EDIT 2 ---
-
-  // --- EDIT 3: Calculate final price ---
+  // Calcular precios
   const originalPrice = product?.price ?? 0;
   const discountAmount = product?.discount ?? 0;
   const finalPrice = originalPrice - discountAmount;
   const hasDiscount = discountAmount > 0;
-  // --- END EDIT 3 ---
 
-
+  // Obtener todas las imágenes del producto
+  const productImages = product?.images || [];
+  
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Assuming Navigation component provides the header similar to the screenshot */}
       <Navigation />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* --- EDIT 4: Adjust Grid Layout --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Product Image Section */}
-          {/* Use aspect-ratio for better consistency */}
-          <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden border">
-            {primaryImageUrl ? (
+        {/* Breadcrumbs */}
+        <div className="mb-6 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-primary">Inicio</Link>
+          {category && (
+            <>
+              <span className="mx-2">/</span>
+              <Link href={`/categories/${category.slug || category.id}`} className="hover:text-primary">
+                {category.name}
+              </Link>
+            </>
+          )}
+          <span className="mx-2">/</span>
+          <span>{product?.name}</span>
+        </div>
+
+        {/* Product Display */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* Left Column - Images */}
+          <div className="space-y-4">
+            {/* Main Image */}
+            <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden border">
               <img
-                src={primaryImageUrl}
-                alt={product?.name ?? 'Product image'}
-                // Adjust object-fit as needed (contain or cover)
+                src={selectedImage || (productImages.length > 0 ? productImages[0].url : "https://via.placeholder.com/600?text=No+Image")}
+                alt={product?.name || "Product image"}
                 className="w-full h-full object-contain"
-                onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/600?text=Image+Error"; }} // Basic error handling
+                onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/600?text=Image+Error"; }}
               />
-            ) : (
-              // Placeholder similar to screenshot
-              <div className="flex flex-col items-center justify-center text-muted-foreground">
-                 {/* Placeholder Icon */}
-                 <svg className="w-16 h-16 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <p className="text-sm">No image available</p>
+            </div>
+            
+            {/* Thumbnail Gallery */}
+            {productImages.length > 1 && (
+              <div className="grid grid-cols-5 gap-2">
+                {productImages.map((image, index) => (
+                  <div 
+                    key={image.id || index}
+                    className={`aspect-square cursor-pointer border rounded-md overflow-hidden ${selectedImage === image.url ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSelectedImage(image.url)}
+                  >
+                    <img 
+                      src={image.url} 
+                      alt={image.altText || `${product.name} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=Error"; }}
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>
-          {/* --- END EDIT 4 --- */}
 
-          {/* Product Details Section */}
+          {/* Right Column - Product Info */}
           <div>
-            {/* Optional: Breadcrumbs or Category Link */}
-            <div className="mb-2 text-sm text-muted-foreground">
-              <Link href="/" className="hover:text-primary">Home</Link>
-              {category && (
-                <>
-                  <span className="mx-2">/</span>
-                  <Link href={`/categories/${category.slug || category.id}`} className="hover:text-primary">
-                    {category.name}
-                  </Link>
-                </>
-              )}
-               <span className="mx-2">/</span>
-               <span>{product?.name}</span> {/* Current product */}
-            </div>
-
-            {/* --- EDIT 5: Display Brand --- */}
+            {/* Brand */}
             {product?.brand && (
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{product.brand}</p>
             )}
-            {/* --- END EDIT 5 --- */}
-
-            <h1 className="text-3xl lg:text-4xl font-bold mb-3">{product?.name}</h1>
-
-            {/* --- EDIT 6: Display Price with Discount --- */}
-            <div className="flex items-baseline gap-3 mb-4">
-               <p className={`text-2xl lg:text-3xl font-bold ${hasDiscount ? 'text-red-600' : 'text-primary'}`}>
-                 ${finalPrice.toFixed(2)}
-               </p>
-               {hasDiscount && (
-                 <p className="text-lg text-muted-foreground line-through">
-                   ${originalPrice.toFixed(2)}
-                 </p>
-               )}
+            
+            {/* Product Name */}
+            <h1 className="text-3xl font-bold mb-4">{product?.name}</h1>
+            
+            {/* Price */}
+            <div className="flex items-baseline gap-3 mb-6">
+              <p className={`text-2xl font-bold ${hasDiscount ? 'text-red-600' : 'text-primary'}`}>
+                ${finalPrice.toFixed(2)}
+              </p>
+              {hasDiscount && (
+                <p className="text-lg text-muted-foreground line-through">
+                  ${originalPrice.toFixed(2)}
+                </p>
+              )}
             </div>
-            {/* --- END EDIT 6 --- */}
-
-            {/* --- EDIT 7: Display Stock Status --- */}
-            <div className="mb-5">
+            
+            {/* Description */}
+            <div className="prose prose-sm max-w-none mb-6">
+              <p>{product?.description || "No description available."}</p>
+            </div>
+            
+            {/* Color Selection */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium mb-3">Color</h3>
+              <div className="flex gap-2">
+                {availableColors.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-8 h-8 rounded-full ${
+                      selectedColor === color ? 'ring-2 ring-offset-2 ring-primary' : ''
+                    }`}
+                    style={{ backgroundColor: color === 'white' ? '#f9fafb' : color }}
+                    onClick={() => handleColorSelect(color)}
+                    aria-label={`Color ${color}`}
+                  />
+                ))}
+              </div>
+              {!selectedColor && (
+                <p className="text-xs text-red-500 mt-1">Please select a color</p>
+              )}
+            </div>
+            
+            {/* Size Selection */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-medium">Size</h3>
+                <button className="text-xs text-primary hover:underline">Size Guide</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableSizes.map(size => (
+                  <button
+                    key={size}
+                    type="button"
+                    className={`min-w-[3rem] h-10 px-3 border rounded-md flex items-center justify-center text-sm font-medium ${
+                      selectedSize === size 
+                        ? 'bg-primary text-primary-foreground border-primary' 
+                        : 'bg-background hover:bg-muted'
+                    }`}
+                    onClick={() => handleSizeSelect(size)}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+              {!selectedSize && (
+                <p className="text-xs text-red-500 mt-1">Please select a size</p>
+              )}
+            </div>
+            
+            {/* Stock Status */}
+            <div className="mb-6">
               {product && product.stock > 0 ? (
-                 product.stock < 10 ? (
-                   <Badge variant="outline" className="text-yellow-600 border-yellow-500">Low Stock ({product.stock} left)</Badge>
-                 ) : (
-                   <Badge variant="outline" className="text-green-600 border-green-500">In Stock</Badge>
-                 )
+                product.stock < 10 ? (
+                  <Badge variant="outline" className="text-yellow-600 border-yellow-500">Low Stock ({product.stock} left)</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-green-600 border-green-500">In Stock</Badge>
+                )
               ) : (
                 <Badge variant="destructive">Out of Stock</Badge>
               )}
-              {/* Display unavailable status if product is inactive */}
               {product?.active === false && (
-                 <Badge variant="destructive" className="ml-2">Currently Unavailable</Badge>
+                <Badge variant="destructive" className="ml-2">Currently Unavailable</Badge>
               )}
             </div>
-            {/* --- END EDIT 7 --- */}
-
-            {/* Description */}
-            {/* Use prose for better text formatting */}
-            <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none mb-6">
-              <p>{product?.description || "No description available."}</p>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                size="lg"
+                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || !selectedColor || !selectedSize}
+                onClick={handleAddToCart}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z" />
+                  <path d="M16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                </svg>
+                Add to Cart
+              </Button>
+              <Button
+                className="flex-1"
+                size="lg"
+                variant="outline"
+                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || !selectedColor || !selectedSize}
+                onClick={handleBuyNow}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                Buy Now
+              </Button>
             </div>
-
-            {/* Variants Section Placeholder (Implement later if needed) */}
-            {/* <div> ... Variant selection UI ... </div> */}
-
-            {/* Add to Cart Button */}
-            <Button
-              size="lg"
-              // Disable if inactive OR out of stock
-              disabled={product?.active === false || (product?.stock ?? 0) <= 0}
-              className="w-full sm:w-auto"
-              // onClick={handleAddToCart} // Add your cart logic handler here
-            >
-              Add to Cart
-            </Button>
-
-             {/* Optional: Add Wishlist button, etc. */}
-
           </div>
         </div>
-
-        {/* Optional: Reviews Section Placeholder (Implement later if needed) */}
-        {/* <div className="mt-12"> ... Reviews display ... </div> */}
-
       </main>
 
-      {/* Footer - Keep or modify as needed */}
       <footer className="border-t py-6 bg-gray-100 dark:bg-gray-900 mt-12">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Your Store Name. All rights reserved.</p>

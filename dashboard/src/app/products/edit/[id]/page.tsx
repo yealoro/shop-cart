@@ -146,11 +146,11 @@ export default function EditProductPage() { // Removed { params }: any
       categoryId: parseInt(formData.categoryId, 10),
     };
 
-    console.log('Updating product data:', productData); // Log for debugging
+    console.log(`Attempting to update product with ID: ${id}`, productData); // Log before fetch
 
     try {
       const response = await fetch(`http://localhost:3300/products/${id}`, {
-        method: 'PATCH', // Or PUT, depending on your API
+        method: 'PATCH', 
         headers: {
           'Content-Type': 'application/json',
         },
@@ -158,18 +158,25 @@ export default function EditProductPage() { // Removed { params }: any
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to update product: ${errorText}`);
+        const errorBody = await response.text(); // Read body regardless of type for logging
+        console.error(`Error response status: ${response.status}, body:`, errorBody);
+        // Specific check for 404 during PATCH
+        if (response.status === 404) {
+             throw new Error(`Failed to update: Product with ID ${id} not found by the API.`);
+        } else {
+             // General error for other non-ok statuses
+             throw new Error(`Failed to update product. API responded with status ${response.status}. Response: ${errorBody}`);
+        }
       }
 
       const updatedProduct = await response.json();
-      console.log('Updated product:', updatedProduct); // Log for verification
+      console.log('Updated product:', updatedProduct); 
       toast.success("Product updated successfully!");
-      router.push('/admin/products'); // Navigate back to the admin products list
+      router.push('/admin/products'); 
     } catch (err) {
-      console.error('Error details:', err);
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during update.';
+      // Log the caught error object itself for more details if available
+      console.error('Caught error during product update:', err); 
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during update.';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
