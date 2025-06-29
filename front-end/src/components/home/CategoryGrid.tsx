@@ -20,7 +20,7 @@ export default function CategoryGrid() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch("http://localhost:3300/categories");
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
         if (!response.ok) {
           throw new Error("Failed to fetch categories");
         }

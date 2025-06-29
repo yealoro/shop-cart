@@ -1,95 +1,228 @@
 "use client";
-
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, X, ShoppingCart, User } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import AccountIcon from "./icon/AccountIcon";
+import CartIcon from "./icon/CartIcon";
+import MenuIcon from "./icon/MenuIcon";
+import CloseIcon from "./icon/CloseIcon";
+import InstagramIcon from "./icon/InstagramIcon";
+import TiktokIcon from "./icon/TiktokIcon";
+import AnnouncementBanner from "./AnnouncementBanner";
 
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+  const { getItemCount } = useCart();
+  
+  // Add this useEffect to handle client-side mounting
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Mensajes para el banner de anuncios
+  const announcementMessages = [
+    "PLEASE READ THE TERMS & CONDITIONS! SHIPPING DELAYS DUE TO SUPPLIER DELAYS.",
+    "FREE SHIPPING ON ORDERS OVER $50 IN THE US ONLY",
+    "WE ARE WORKING ON ORDERS EVERY DAY! THANK YOU FOR YOUR PATIENCE.",
+    "NEW COLLECTIONS COMING SOON! STAY TUNED!"
+  ];
+  
+  useEffect(() => {
+    // Prevenir scroll cuando el menú está abierto
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
   
   useEffect(() => {
     const handleScroll = () => {
-      // Detectar cuando el scroll ha superado cierta altura (por ejemplo, 50px)
+      // Detectar cuando el scroll ha superado cierta altura
       if (window.scrollY > 150) {
         setIsScrolled(true);
-        // Mostrar el spacer cuando la navegación se vuelve fija
         const spacer = document.getElementById('nav-spacer');
         if (spacer) spacer.classList.remove('hidden');
       } else {
         setIsScrolled(false);
-        // Ocultar el spacer cuando la navegación vuelve a su posición normal
         const spacer = document.getElementById('nav-spacer');
         if (spacer) spacer.classList.add('hidden');
       }
     };
     
-    // Añadir el event listener para el scroll
     window.addEventListener('scroll', handleScroll);
     
-    // Cleanup del event listener cuando el componente se desmonta
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
-    <header 
-      className={`w-full py-4 px-6 flex items-center justify-between transition-all duration-300 ease-in-out z-50
-        ${isScrolled 
-          ? 'fixed top-0 bg-white/95 dark:bg-black/95 shadow-md' 
-          : 'bg-transparent relative'
-        }`}
-    >
-      {/* Left Nav - Search */}
-      <div className="flex items-center gap-8">
-        <button aria-label="Search" className="text-xl">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-          </svg>
+    <>
+      {/* Announcement Banner Slider */}
+      <AnnouncementBanner messages={announcementMessages} interval={6000} />
+      
+      <header 
+        className="w-full py-4 px-4 sm:px-6 md:px-8 md:my-10 lg:px-52 flex items-center justify-between z-50">
+      
+        {/* Mobile Menu Button */}
+        <button 
+          className="md:hidden flex items-center" 
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          <MenuIcon />
         </button>
 
-        {/* Main Navigation */}
-        <nav className="hidden md:flex gap-6">
-          <Link href="/" className="hover:opacity-70">Home</Link>
-          <Link href="/vtuber-collabs" className="hover:opacity-70">Vtuber Collabs</Link>
-          <Link href="/ara-artists" className="hover:opacity-70">Ara Artists</Link>
-        </nav>
-      </div>
+        {/* Left Nav - Search */}
+        <div className="hidden md:flex items-center gap-8">
+          {/* Main Navigation */}
+          <nav className="hidden md:flex gap-6 text-lg">
+            <Link href="/" className="hover:opacity-70 font-medium">Inicio</Link>
+            <Link href="/categories/stickers" className="hover:opacity-70 font-medium">Stickers</Link>
+            <Link href="/categories/camisetas" className="hover:opacity-70 font-medium">Camisetas</Link>
+          </nav>
+        </div>
 
-      {/* Logo Center */}
-      <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
-        <Image 
-          src="/ara-culture-logo.png" 
-          alt="ARA CULTURE" 
-          width={200} 
-          height={70}
-          className={`transition-all duration-300 ${isScrolled ? 'h-10' : 'h-12'} w-auto`}
-          priority
-        />
-      </Link>
+        {/* Logo Center */}
+        <Link href="/" className="mx-auto md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
+          <div className="relative">
+            <img 
+              src="/logo.webp" 
+              alt="Deco House Logo" 
+              width={100} 
+              height={40}
+              className="w-[60px] h-[60px] md:w-[85px] md:h-[85px]"
+            />
+          </div>
+        </Link>
 
-      {/* Right Nav */}
-      <div className="flex items-center gap-6">
-        <nav className="hidden md:flex gap-6">
-          <Link href="/policies" className="hover:opacity-70">Policies</Link>
-          <Link href="/about-us" className="hover:opacity-70">About Us</Link>
-          <Link href="/ara-vtuber" className="hover:opacity-70">Ara Vtuber</Link>
-        </nav>
-        
-        {/* Social Icons */}
-        <div className="flex gap-4 items-center">
-          <button aria-label="Account" className="text-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-            </svg>
-          </button>
-          <button aria-label="Cart" className="text-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-            </svg>
+        {/* Right Nav */}
+        <div className="flex items-center gap-4">
+          <nav className="hidden md:flex gap-6 text-lg">
+            <Link href="/categories/mousepads" className="hover:opacity-70 font-medium">Mouse Pads</Link>
+            <Link href="/about-us" className="hover:opacity-70 font-medium">Cuadros</Link>
+            <Link href="/ara-vtuber" className="hover:opacity-70 font-medium">Sobre Nosotros</Link>
+          </nav>
+          
+          {/* Account and Cart Icons - Visible on all screens */}
+          <div className="flex gap-4 items-center">
+            <Link href="/login" aria-label="Account" className="text-xl">
+              <AccountIcon />
+            </Link>
+            <Link href="/cart" className="text-xl relative">
+              <CartIcon />
+              {/* Only render the badge on the client after component has mounted */}
+              {isMounted && getItemCount() > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                  {getItemCount()}
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Menu Overlay - REWRITTEN */}
+      <div 
+        className={`fixed inset-0 bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+          isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          {/* Logo inside mobile menu */}
+          <Link href="/" className="flex-shrink-0" onClick={() => setIsMenuOpen(false)}>
+            <img 
+              src="/logo.webp" 
+              alt="Deco House Logo" 
+              width={80} 
+              height={32}
+              className="w-[60px] h-[60px]" // Smaller logo for mobile menu
+            />
+          </Link>
+          {/* Close Button */}
+          <button 
+            onClick={toggleMenu}
+            aria-label="Cerrar menú"
+            className="text-2xl p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <CloseIcon />
           </button>
         </div>
+        <nav className="flex flex-col p-4 overflow-y-auto h-[calc(100%-64px)]"> {/* Adjust height based on header height */}
+          <Link 
+            href="/" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Inicio
+          </Link>
+          <Link 
+            href="/categories/stickers" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Stickers
+          </Link>
+          <Link 
+            href="/categories/camisetas" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Camisetas
+          </Link>
+          <Link 
+            href="/categories/mousepads" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Mouse Pads
+          </Link>
+          <Link 
+            href="/about-us" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Sobre Nosotros
+          </Link>
+          <Link 
+            href="/ara-vtuber" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Ara Vtuber
+          </Link>
+          <Link 
+            href="/login" 
+            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Iniciar Sesión
+          </Link>
+          
+          {/* Social Media Icons */}
+          <div className="flex justify-center gap-6 mt-8 p-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-pink-500 transition-colors">
+              <InstagramIcon />
+            </a>
+            <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <TiktokIcon />
+            </a>
+          </div>
+        </nav>
       </div>
-    </header>
+    </>
   );
-} 
+}
