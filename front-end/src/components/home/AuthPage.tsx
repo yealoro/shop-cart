@@ -1,8 +1,8 @@
 "use client"
-import { useState, useTransition } from "react" // Importar hooks de React
-import Link from "next/link" // Importar Link de Next.js
+import { useState, useTransition } from "react" // Import React hooks
+import Link from "next/link" // Import Link from Next.js
 
-// Iconos de Lucide React
+// Icons from Lucide React
 import {
   Eye,
   EyeOff,
@@ -16,7 +16,7 @@ import {
   CheckCircle,
 } from "lucide-react"
 
-// Componentes de UI (asumiendo que provienen de una librería como Shadcn UI)
+// UI Components (assuming they come from a library like Shadcn UI)
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,63 +25,63 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 
-// Importaciones locales
+// Local imports
 import { loginAction, registerAction, forgotPasswordAction, socialLoginAction } from "@/lib/auth-actions"
 import { getPasswordStrength } from "@/lib/validation"
 import type { AuthResponse } from "@/types/auth"
 
-type ModoAutenticacion = "login" | "register" | "forgot-password"
+type AuthMode = "login" | "register" | "forgot-password"
 
 export default function AuthPage() {
-  const [modo, establecerModo] = useState<ModoAutenticacion>("login")
-  const [mostrarContrasena, establecerMostrarContrasena] = useState(false)
-  const [mostrarConfirmarContrasena, establecerMostrarConfirmarContrasena] = useState(false)
-  const [contrasena, establecerContrasena] = useState("")
-  const [respuesta, establecerRespuesta] = useState<AuthResponse | null>(null)
-  const [estaPendiente, iniciarTransicion] = useTransition()
+  const [mode, setMode] = useState<AuthMode>("login")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [password, setPassword] = useState("")
+  const [response, setResponse] = useState<AuthResponse | null>(null)
+  const [isPending, startTransition] = useTransition()
 
-  const fuerzaContrasena = getPasswordStrength(contrasena)
+  const passwordStrength = getPasswordStrength(password)
 
-  const manejarEnvio = async (formData: FormData) => {
-    iniciarTransicion(async () => {
-      let resultado: AuthResponse
+  const handleSubmit = async (formData: FormData) => {
+    startTransition(async () => {
+      let result: AuthResponse
 
-      switch (modo) {
+      switch (mode) {
         case "login":
-          resultado = await loginAction(formData)
+          result = await loginAction(formData)
           break
         case "register":
-          resultado = await registerAction(formData)
+          result = await registerAction(formData)
           break
         case "forgot-password":
-          resultado = await forgotPasswordAction(formData)
+          result = await forgotPasswordAction(formData)
           break
         default:
           return
       }
 
-      establecerRespuesta(resultado)
+      setResponse(result)
 
-      if (resultado.success && resultado.redirectTo) {
-        // En producción, usarías router.push(resultado.redirectTo)
-        console.log(`Redirigiendo a: ${resultado.redirectTo}`)
+      if (result.success && result.redirectTo) {
+        // In production, you would use router.push(result.redirectTo)
+        console.log(`Redirecting to: ${result.redirectTo}`)
       }
     })
   }
 
-  const manejarInicioSesionSocial = (proveedor: "google" | "facebook") => {
-    iniciarTransicion(async () => {
-      const resultado = await socialLoginAction(proveedor)
-      establecerRespuesta(resultado)
+  const handleSocialLogin = (provider: "google" | "facebook") => {
+    startTransition(async () => {
+      const result = await socialLoginAction(provider)
+      setResponse(result)
 
-      if (resultado.success && resultado.redirectTo) {
-        console.log(`Redirigiendo a: ${resultado.redirectTo}`)
+      if (result.success && result.redirectTo) {
+        console.log(`Redirecting to: ${result.redirectTo}`)
       }
     })
   }
 
-  const obtenerColorFuerzaContrasena = () => {
-    switch (fuerzaContrasena.strength) {
+  const getPasswordStrengthColor = () => {
+    switch (passwordStrength.strength) {
       case "weak":
         return "bg-red-500"
       case "medium":
@@ -93,8 +93,8 @@ export default function AuthPage() {
     }
   }
 
-  const obtenerTextoFuerzaContrasena = () => {
-    switch (fuerzaContrasena.strength) {
+  const getPasswordStrengthText = () => {
+    switch (passwordStrength.strength) {
       case "weak":
         return "Débil"
       case "medium":
@@ -109,25 +109,25 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Encabezado */}
+        {/* Header */}
         <div className="text-center space-y-2">
           <p className="text-gray-600">
-            {modo === "login" && "¡Bienvenido de nuevo! Por favor, inicia sesión en tu cuenta."}
-            {modo === "register" && "Crea tu cuenta para empezar."}
-            {modo === "forgot-password" && "Restablece tu contraseña."}
+            {mode === "login" && "¡Bienvenido de nuevo! Por favor, inicia sesión en tu cuenta."}
+            {mode === "register" && "Crea tu cuenta para empezar."}
+            {mode === "forgot-password" && "Restablece tu contraseña."}
           </p>
         </div>
 
-        {/* Alerta de Respuesta */}
-        {respuesta && (
-          <Alert className={respuesta.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
-            {respuesta.success ? (
+        {/* Response Alert */}
+        {response && (
+          <Alert className={response.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+            {response.success ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
               <AlertCircle className="h-4 w-4 text-red-600" />
             )}
-            <AlertDescription className={respuesta.success ? "text-green-800" : "text-red-800"}>
-              {respuesta.message}
+            <AlertDescription className={response.success ? "text-green-800" : "text-red-800"}>
+              {response.message}
             </AlertDescription>
           </Alert>
         )}
@@ -135,26 +135,26 @@ export default function AuthPage() {
         <Card className="py-8">
           <CardHeader>
             <CardTitle>
-              {modo === "login" && "Iniciar Sesión"}
-              {modo === "register" && "Crear Cuenta"}
-              {modo === "forgot-password" && "Restablecer Contraseña"}
+              {mode === "login" && "Iniciar Sesión"}
+              {mode === "register" && "Crear Cuenta"}
+              {mode === "forgot-password" && "Restablecer Contraseña"}
             </CardTitle>
             <CardDescription>
-              {modo === "login" && "Introduce tus credenciales para acceder a tu cuenta"}
-              {modo === "register" && "Rellena tu información para crear una nueva cuenta"}
-              {modo === "forgot-password" && "Introduce tu correo electrónico para recibir instrucciones de restablecimiento"}
+              {mode === "login" && "Introduce tus credenciales para acceder a tu cuenta"}
+              {mode === "register" && "Rellena tu información para crear una nueva cuenta"}
+              {mode === "forgot-password" && "Introduce tu correo electrónico para recibir instrucciones de restablecimiento"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Botones de Inicio de Sesión Social */}
-            {modo !== "forgot-password" && (
+            {/* Social Login Buttons */}
+            {mode !== "forgot-password" && (
               <div className="space-y-3">
                 <Button
                   type="button"
                   variant="outline"
                   className="w-full bg-transparent"
-                  onClick={() => manejarInicioSesionSocial("google")}
-                  disabled={estaPendiente}
+                  onClick={() => handleSocialLogin("google")}
+                  disabled={isPending}
                 >
                   <Chrome className="mr-2 h-4 w-4" />
                   Continuar con Google
@@ -163,8 +163,8 @@ export default function AuthPage() {
                   type="button"
                   variant="outline"
                   className="w-full bg-transparent"
-                  onClick={() => manejarInicioSesionSocial("facebook")}
-                  disabled={estaPendiente}
+                  onClick={() => handleSocialLogin("facebook")}
+                  disabled={isPending}
                 >
                   <Facebook className="mr-2 h-4 w-4" />
                   Continuar con Facebook
@@ -174,7 +174,7 @@ export default function AuthPage() {
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                   </div>
-                  {/* Capitalización ajustada para coincidir con la imagen */}
+                  {/* Capitalization adjusted to match the image */}
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-white px-2 text-muted-foreground">O CONTINUAR CON CORREO ELECTRÓNICO</span>
                   </div>
@@ -182,10 +182,10 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* Formulario de Autenticación */}
-            <form action={manejarEnvio} className="space-y-4">
-              {/* Campo de Nombre (Solo Registro) */}
-              {modo === "register" && (
+            {/* Authentication Form */}
+            <form action={handleSubmit} className="space-y-4">
+              {/* Name Field (Register Only) */}
+              {mode === "register" && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre Completo</Label>
                   <div className="relative">
@@ -197,13 +197,13 @@ export default function AuthPage() {
                       placeholder="Introduce tu nombre completo"
                       className="pl-10"
                       required
-                      disabled={estaPendiente}
+                      disabled={isPending}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Campo de Correo Electrónico */}
+              {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email">Correo Electrónico</Label>
                 <div className="relative">
@@ -215,13 +215,13 @@ export default function AuthPage() {
                     placeholder="Introduce tu correo electrónico"
                     className="pl-10"
                     required
-                    disabled={estaPendiente}
+                    disabled={isPending}
                   />
                 </div>
               </div>
 
-              {/* Campo de Contraseña */}
-              {modo !== "forgot-password" && (
+              {/* Password Field */}
+              {mode !== "forgot-password" && (
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
                   <div className="relative">
@@ -229,48 +229,48 @@ export default function AuthPage() {
                     <Input
                       id="password"
                       name="password"
-                      type={mostrarContrasena ? "text" : "password"}
+                      type={showPassword ? "text" : "password"}
                       placeholder="Introduce tu contraseña"
                       className="pl-10 pr-10"
-                      value={contrasena}
-                      onChange={(e) => establecerContrasena(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
-                      disabled={estaPendiente}
+                      disabled={isPending}
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => establecerMostrarContrasena(!mostrarContrasena)}
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      {mostrarContrasena ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
 
-                  {/* Indicador de Fuerza de Contraseña (Solo Registro) */}
-                  {modo === "register" && contrasena && (
+                  {/* Password Strength Indicator (Register Only) */}
+                  {mode === "register" && password && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs">
                         <span>Fuerza de la contraseña</span>
                         <span
                           className={`font-medium ${
-                            fuerzaContrasena.strength === "weak"
+                            passwordStrength.strength === "weak"
                               ? "text-red-600"
-                              : fuerzaContrasena.strength === "medium"
+                              : passwordStrength.strength === "medium"
                                 ? "text-yellow-600"
                                 : "text-green-600"
                           }`}
                         >
-                          {obtenerTextoFuerzaContrasena()}
+                          {getPasswordStrengthText()}
                         </span>
                       </div>
-                      <Progress value={(fuerzaContrasena.score / 6) * 100} className="h-2" />
+                      <Progress value={(passwordStrength.score / 6) * 100} className="h-2" />
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Campo de Confirmar Contraseña (Solo Registro) */}
-              {modo === "register" && (
+              {/* Confirm Password Field (Register Only) */}
+              {mode === "register" && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
                   <div className="relative">
@@ -278,28 +278,28 @@ export default function AuthPage() {
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
-                      type={mostrarConfirmarContrasena ? "text" : "password"}
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirma tu contraseña"
                       className="pl-10 pr-10"
                       required
-                      disabled={estaPendiente}
+                      disabled={isPending}
                     />
                     <button
                       type="button"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      onClick={() => establecerMostrarConfirmarContrasena(!mostrarConfirmarContrasena)}
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      {mostrarConfirmarContrasena ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Recordarme (Solo Inicio de Sesión) */}
-              {modo === "login" && (
+              {/* Remember Me (Login Only) */}
+              {mode === "login" && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="rememberMe" name="rememberMe" disabled={estaPendiente} />
+                    <Checkbox id="rememberMe" name="rememberMe" disabled={isPending} />
                     <Label htmlFor="rememberMe" className="text-sm">
                       Recordarme
                     </Label>
@@ -307,17 +307,17 @@ export default function AuthPage() {
                   <button
                     type="button"
                     className="text-sm text-blue-600 hover:text-blue-500"
-                    onClick={() => establecerModo("forgot-password")}
+                    onClick={() => setMode("forgot-password")}
                   >
                     ¿Olvidaste tu contraseña?
                   </button>
                 </div>
               )}
 
-              {/* Aceptar Términos (Solo Registro) */}
-              {modo === "register" && (
+              {/* Accept Terms (Register Only) */}
+              {mode === "register" && (
                 <div className="space-x-2">
-                  <Checkbox id="acceptTerms" name="acceptTerms" required disabled={estaPendiente} />
+                  <Checkbox id="acceptTerms" name="acceptTerms" required disabled={isPending} />
                   <Label htmlFor="acceptTerms" className="text-sm">
                     Acepto los{" "}
                     <Link href="/terms" className="text-blue-600 hover:text-blue-500">
@@ -331,59 +331,59 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {/* Botón de Enviar */}
-              <Button type="submit" className="w-full" disabled={estaPendiente}>
-                {estaPendiente ? (
+              {/* Submit Button */}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     Procesando...
                   </div>
                 ) : (
                   <div className="flex items-center">
-                    {modo === "login" && "Iniciar Sesión"}
-                    {modo === "register" && "Crear Cuenta"}
-                    {modo === "forgot-password" && "Enviar Enlace de Restablecimiento"}
+                    {mode === "login" && "Iniciar Sesión"}
+                    {mode === "register" && "Crear Cuenta"}
+                    {mode === "forgot-password" && "Enviar Enlace de Restablecimiento"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </div>
                 )}
               </Button>
             </form>
 
-            {/* Enlaces para Cambiar de Modo */}
+            {/* Links to Change Mode */}
             <div className="text-center space-y-2">
-              {modo === "login" && (
+              {mode === "login" && (
                 <p className="text-sm text-gray-600">
                   {"¿No tienes una cuenta? "}
                   <button
                     type="button"
                     className="text-blue-600 hover:text-blue-500 font-medium"
-                    onClick={() => establecerModo("register")}
+                    onClick={() => setMode("register")}
                   >
                     Regístrate
                   </button>
                 </p>
               )}
 
-              {modo === "register" && (
+              {mode === "register" && (
                 <p className="text-sm text-gray-600">
                   ¿Ya tienes una cuenta?{" "}
                   <button
                     type="button"
                     className="text-blue-600 hover:text-blue-500 font-medium"
-                    onClick={() => establecerModo("login")}
+                    onClick={() => setMode("login")}
                   >
                     Inicia sesión
                   </button>
                 </p>
               )}
 
-              {modo === "forgot-password" && (
+              {mode === "forgot-password" && (
                 <p className="text-sm text-gray-600">
                   ¿Recuerdas tu contraseña?{" "}
                   <button
                     type="button"
                     className="text-blue-600 hover:text-blue-500 font-medium"
-                    onClick={() => establecerModo("login")}
+                    onClick={() => setMode("login")}
                   >
                     Inicia sesión
                   </button>
@@ -393,7 +393,7 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Pie de página */}
+        {/* Footer */}
         <div className="text-center text-xs text-gray-500">
           <p>© {new Date().getFullYear()} Deco House Cali. Todos los derechos reservados.</p>
           <p className="mt-1">Autenticación segura impulsada por estándares de la industria</p>

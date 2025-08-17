@@ -7,7 +7,8 @@ import { CartProvider } from "@/context/CartContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Deco House Cali",
+  title: "Dashboard Deco House Cali",
+
   description: "Descubre",
 };
 
@@ -17,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={inter.className}>
         <CartProvider>
           {children}

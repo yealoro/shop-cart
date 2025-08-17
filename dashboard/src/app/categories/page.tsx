@@ -53,7 +53,7 @@ export default function CategoriesPage() {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch("http://localhost:3300/categories")
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`)
         if (!response.ok) {
           throw new Error("Failed to fetch categories")
         }
@@ -95,7 +95,7 @@ export default function CategoriesPage() {
         setDeleteMessage("This category has associated products and cannot be deleted.")
       } else {
         // Delete category
-        const response = await fetch(`http://localhost:3300/categories/${confirmDelete}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${confirmDelete}`, {
           method: "DELETE",
         })
 
