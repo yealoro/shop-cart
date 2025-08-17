@@ -48,7 +48,7 @@ export default function EditCategoryPage() {
       try {
         setLoading(true);
         setError('');
-        const response = await fetch(`http://localhost:3300/categories/${id}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError('Category not found.');
@@ -108,7 +108,7 @@ export default function EditCategoryPage() {
     console.log(`Attempting to update category with ID: ${id}`, formData);
 
     try {
-      const response = await fetch(`http://localhost:3300/categories/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
         method: 'PUT', // Changed from 'PATCH' to 'PUT' to match backend controller
         headers: {
           'Content-Type': 'application/json',
