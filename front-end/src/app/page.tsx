@@ -4,6 +4,7 @@ import HeroBanner from "@/components/home/HeroBanner";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import ShopCTA from "@/components/home/ShopCTA";
 import Footer from "@/components/Footer";
+import Products from "@/components/home/Products";
 
 interface Category {
   id: number;
@@ -22,7 +23,7 @@ export default function Home() {
       <div className="h-[76px] md:h-[84px] hidden" id="nav-spacer"></div>
       <HeroBanner />
       <CategoryGrid />
-      <ShopCTA />
+      <Products />
       <Footer />
     </div>
   );
