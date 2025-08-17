@@ -111,10 +111,6 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Encabezado */}
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-block">
-            <div className="text-2xl font-bold text-gray-900">ARA CULTURE</div>
-            <div className="text-sm text-gray-600">アラー・カルチャー</div>
-          </Link>
           <p className="text-gray-600">
             {modo === "login" && "¡Bienvenido de nuevo! Por favor, inicia sesión en tu cuenta."}
             {modo === "register" && "Crea tu cuenta para empezar."}
