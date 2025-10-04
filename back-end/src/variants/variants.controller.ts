@@ -22,12 +22,12 @@ export class VariantsController {
   }
 
   @Post()
-  create(@Body() variant: Variant) {
+  create(@Body() variant: any) {
     return this.variantsService.create(variant);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() variant: Variant) {
+  update(@Param('id') id: string, @Body() variant: any) {
     return this.variantsService.update(+id, variant);
   }
 
