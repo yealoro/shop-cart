@@ -32,23 +32,33 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    
+
     const response = await fetch(`${API_URL}/products/${params.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify(body),
     });
-    
+
+    const raw = await response.text();
+
     if (!response.ok) {
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        // si no es JSON, dejamos raw como texto
+      }
       return NextResponse.json(
-        { error: 'Failed to update product' },
+        parsed ?? { error: 'Failed to update product', backend: raw },
         { status: response.status }
       );
     }
-    
-    const updatedProduct = await response.json();
+
+    // OK: intentamos parsear JSON de éxito
+    const updatedProduct = JSON.parse(raw);
     return NextResponse.json(updatedProduct);
   } catch (error) {
     return NextResponse.json(

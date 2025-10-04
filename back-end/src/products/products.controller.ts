@@ -64,11 +64,9 @@ export class ProductsController {
     }
   }
 
-  @Get(':id/price')
-// Remove this implementation since it's duplicated below
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() product: Product) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() product: Partial<Product>) {
     return this.productsService.update(id, product);
   }
 

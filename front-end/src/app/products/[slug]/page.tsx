@@ -8,6 +8,11 @@ import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/CartContext";
+import { useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import Image from "next/image";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface Image {
   id: number;
@@ -40,6 +45,16 @@ interface Category {
 export default function ProductDetailPage() {
   const params = useParams();
   const productSlug = params.slug as string;
+  const searchParams = useSearchParams();
+  const isAdmin = (searchParams.get("admin") === "1" || searchParams.get("admin") === "true");
+  
+  // Helper para resolver URLs de imágenes (soporta rutas relativas del backend /uploads)
+  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3300").replace(/\/$/, "");
+  const resolveImageSrc = (src?: string) => {
+    if (!src) return "https://via.placeholder.com/600?text=No+Image";
+    if (src.startsWith("/uploads")) return `${API_BASE_URL}${src}`;
+    return src;
+  };
   
   const [product, setProduct] = useState<Product | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
@@ -49,7 +64,9 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
-
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [newImageAlt, setNewImageAlt] = useState("");
+  const [newImageOrder, setNewImageOrder] = useState<number | "">("");
   // Colores y tallas de ejemplo (reemplazar con datos reales del producto)
   const availableColors = ["white", "black", "blue"];
   const availableSizes = ["S", "M", "L", "XL"];
@@ -184,14 +201,72 @@ export default function ProductDetailPage() {
   }
 
   // Calcular precios
-  const originalPrice = product?.price ?? 0;
-  const discountAmount = product?.discount ?? 0;
-  const finalPrice = originalPrice - discountAmount;
+  const originalPrice = Number(product?.price ?? 0);
+  const discountAmount = Number(product?.discount ?? 0);
+  const finalPrice = Math.max(0, originalPrice - discountAmount);
   const hasDiscount = discountAmount > 0;
 
   // Obtener todas las imágenes del producto
   const productImages = product?.images || [];
-  
+
+  const handleAddImage = async () => {
+    if (!product) {
+      toast.error("No product loaded");
+      return;
+    }
+    if (!newImageUrl) {
+      toast.error("Por favor ingresa la URL de la imagen");
+      return;
+    }
+    try {
+      const orderValue = newImageOrder === "" ? (productImages.length) : Number(newImageOrder);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/images`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: newImageUrl,
+          altText: newImageAlt || product.name,
+          order: orderValue,
+          product: { id: product.id },
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Error al guardar la imagen: ${response.statusText}`);
+      }
+      const createdImage: Image = await response.json();
+      setProduct((prev) => prev ? { ...prev, images: [...(prev.images || []), createdImage] } : prev);
+      setSelectedImage(createdImage.url);
+      setNewImageUrl("");
+      setNewImageAlt("");
+      setNewImageOrder("");
+      toast.success("Imagen agregada correctamente");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "No se pudo guardar la imagen");
+    }
+  };
+
+  const handleDeleteImage = async (imageId: number) => {
+    if (!product) return;
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/images/${imageId}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error("No se pudo eliminar la imagen");
+      }
+      setProduct((prev) => prev ? { ...prev, images: (prev.images || []).filter(img => img.id !== imageId) } : prev);
+      if (selectedImage && !((product.images || []).some(img => img.url === selectedImage))) {
+        const first = (product.images || [])[0];
+        setSelectedImage(first ? first.url : null);
+      }
+      toast.success("Imagen eliminada");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Error eliminando imagen");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
@@ -216,33 +291,78 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Left Column - Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden border">
-              <img
-                src={selectedImage || (productImages.length > 0 ? productImages[0].url : "https://via.placeholder.com/600?text=No+Image")}
-                alt={product?.name || "Product image"}
-                className="w-full h-full object-contain"
-                onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/600?text=Image+Error"; }}
-              />
-            </div>
-            
-            {/* Thumbnail Gallery */}
-            {productImages.length > 1 && (
-              <div className="grid grid-cols-5 gap-2">
-                {productImages.map((image, index) => (
-                  <div 
-                    key={image.id || index}
-                    className={`aspect-square cursor-pointer border rounded-md overflow-hidden ${selectedImage === image.url ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => setSelectedImage(image.url)}
-                  >
-                    <img 
-                      src={image.url} 
-                      alt={image.altText || `${product.name} view ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=Error"; }}
-                    />
-                  </div>
+            {/* Carousel de Imágenes */}
+            <Carousel
+              opts={{ loop: true }}
+              plugins={[Autoplay({ delay: 4000, stopOnMouseEnter: true })]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {(productImages.length > 0 ? productImages : [{ url: "https://via.placeholder.com/600?text=No+Image", altText: product?.name }]).map((image, index) => (
+                  <CarouselItem key={'id' in image && image.id ? image.id : index}>
+                    <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border">
+                      <Image
+                        src={resolveImageSrc(image.url)}
+                        alt={image.altText || `${product?.name || "Producto"} - imagen ${index + 1}`}
+                        fill
+                        className="object-contain"
+                        sizes="(min-width: 768px) 50vw, 100vw"
+                        quality={90}
+                        priority={index === 0}
+                      />
+                      {isAdmin && 'id' in image && image.id && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteImage(image.id!)}>Eliminar</Button>
+                        </div>
+                      )}
+                    </div>
+                  </CarouselItem>
                 ))}
+              </CarouselContent>
+              <div className="flex items-center justify-between mt-2">
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            </Carousel>
+
+            {/* Pista de uso */}
+            {productImages.length > 0 && (
+              <div className="text-xs text-muted-foreground">Arrastra o usa los controles para navegar por las imágenes.</div>
+            )}
+
+            {/* Full Gallery */}
+            {productImages.length > 0 && (
+              <section className="mt-6">
+                <h2 className="text-lg font-semibold mb-3">Galería del producto</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {productImages.map((image, index) => (
+                    <div key={image.id || index} className="relative aspect-square rounded-lg overflow-hidden border">
+                      <Image
+                        src={resolveImageSrc(image.url)}
+                        alt={image.altText || `${product?.name || "Producto"} - imagen ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 768px) 33vw, 50vw"
+                        quality={90}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {isAdmin && (
+              <div className="mt-4 p-4 border rounded-md">
+                <h3 className="text-sm font-medium mb-3">Agregar nueva imagen</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input placeholder="URL de la imagen" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} />
+                  <Input placeholder="Texto alternativo (opcional)" value={newImageAlt} onChange={(e) => setNewImageAlt(e.target.value)} />
+                  <Input placeholder="Orden (opcional)" type="number" value={newImageOrder as number | string} onChange={(e) => setNewImageOrder(e.target.value ? Number(e.target.value) : "")} />
+                </div>
+                <div className="mt-3">
+                  <Button onClick={handleAddImage}>Guardar imagen</Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Consejo: Puedes activar el modo administrador añadiendo <strong>?admin=1</strong> a la URL de esta página.</p>
               </div>
             )}
           </div>

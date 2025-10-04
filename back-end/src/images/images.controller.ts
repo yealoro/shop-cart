@@ -22,12 +22,12 @@ export class ImagesController {
   }
 
   @Post()
-  create(@Body() image: Image) {
+  create(@Body() image: any) {
     return this.imagesService.create(image);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() image: Image) {
+  update(@Param('id') id: string, @Body() image: any) {
     return this.imagesService.update(+id, image);
   }
 

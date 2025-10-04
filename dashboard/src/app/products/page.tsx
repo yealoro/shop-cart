@@ -54,7 +54,7 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const response = await fetch("http://localhost:3300/products")
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`)
         if (!response.ok) {
           throw new Error("Failed to fetch products")
         }
@@ -91,7 +91,7 @@ export default function ProductsPage() {
     try {
       if (product?.hasSales) {
         // Deactivate product
-        const response = await fetch(`http://localhost:3300/products/${confirmDelete}/deactivate`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${confirmDelete}/deactivate`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -107,7 +107,7 @@ export default function ProductsPage() {
         toast.success("Product successfully deactivated.")
       } else {
         // Delete product
-        const response = await fetch(`http://localhost:3300/products/${confirmDelete}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${confirmDelete}`, {
           method: "DELETE",
         })
 
@@ -175,7 +175,7 @@ export default function ProductsPage() {
         <div className="flex h-16 items-center px-6">
           <h1 className="text-xl font-semibold">Products</h1>
           <div className="ml-auto flex items-center gap-4">
-            <Link href="/admin/products/create" passHref>
+            <Link href="/products/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Product
@@ -227,7 +227,7 @@ export default function ProductsPage() {
             <p className="mb-4 mt-2 text-sm text-muted-foreground">
               {searchQuery ? "Try a different search term or" : "Get started by"} adding a new product.
             </p>
-            <Link href="/admin/products/create" passHref>
+            <Link href="/products/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Product
@@ -279,7 +279,7 @@ export default function ProductsPage() {
                   </p>
                 </CardContent>
                 <CardFooter className="flex justify-between border-t p-1">
-                  <Link href={`/admin/products/edit/${product.id}`} passHref>
+                  <Link href={`/products/edit/${product.id}`} passHref>
                     <Button variant="outline" size="sm" className="h-7 text-xs px-2">
                       <Edit className="mr-1 h-3 w-3" />
                       Edit
