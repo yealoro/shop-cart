@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Plus, Edit, Trash2, AlertTriangle, Check, X } from "lucide-react"
+import { Plus, Edit, Trash2, AlertTriangle, Check, X, ShoppingBag } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -39,6 +39,7 @@ interface Product {
   description: string
   price: number
   imageUrl?: string
+  images?: { url: string }[]
   hasSales?: boolean
   active?: boolean
 }
@@ -173,12 +174,12 @@ export default function ProductsPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="flex h-16 items-center px-6">
-          <h1 className="text-xl font-semibold">Products</h1>
+          <h1 className="text-2xl font-semibold">Productos</h1>
           <div className="ml-auto flex items-center gap-4">
             <Link href="/products/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add New Product
+                Agrega un nuevo producto
               </Button>
             </Link>
           </div>
@@ -218,7 +219,7 @@ export default function ProductsPage() {
           <div className="flex h-[400px] items-center justify-center">
             <div className="text-center">
               <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              <p className="text-muted-foreground">Loading products...</p>
+              <p className="text-muted-foreground">Cargando productos...</p>
             </div>
           </div>
         ) : filteredProducts.length === 0 ? (
@@ -230,7 +231,7 @@ export default function ProductsPage() {
             <Link href="/products/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add New Product
+                Agrega un nuevo producto
               </Button>
             </Link>
           </div>
@@ -239,23 +240,35 @@ export default function ProductsPage() {
             {filteredProducts.map((product) => (
               <Card
                 key={product.id}
-                className={`overflow-hidden transition-opacity ${product.active === false ? "opacity-60" : ""}`}
+                className={`group overflow-hidden transition-opacity ${product.active === false ? "opacity-60" : ""}`}
               >
-                <div className="aspect-square w-full h-32 bg-gray-100 dark:bg-gray-800">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gray-100 dark:bg-gray-800">
-                      <div className="text-center">
-                        <div className="text-3xl text-gray-400">📷</div>
-                        <p className="mt-1 text-xs text-gray-500">{product.name}</p>
+                <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                  {(() => {
+                    const candidate = product.imageUrl ?? product.images?.[0]?.url
+                    const resolved = (() => {
+                      if (!candidate) return undefined
+                      if (/^https?:\/\//i.test(candidate)) return candidate
+                      const base = process.env.NEXT_PUBLIC_API_URL
+                      if (!base) return candidate
+                      const sanitizedBase = base.replace(/\/+$/, '')
+                      const sanitizedPath = candidate.replace(/^\/+/, '')
+                      return `${sanitizedBase}/${sanitizedPath}`
+                    })()
+                    return resolved ? (
+                      <img
+                        src={resolved}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://via.placeholder.com/300x300?text=No+Image"; }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-gray-600">
+                        <ShoppingBag className="h-12 w-12" />
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
+                
                 </div>
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between">
@@ -268,12 +281,12 @@ export default function ProductsPage() {
                   <p className="mt-1 text-sm font-bold">
                     ${(() => {
                       try {
-                        return typeof product.price === 'number' 
-                          ? product.price.toFixed(2) 
-                          : Number(product.price).toFixed(2);
+                        const intPrice = Math.round(typeof product.price === 'number' ? product.price : Number(product.price))
+                        return intPrice.toLocaleString('es-CO')
                       } catch (e) {
                         console.error(`Error formatting price for product ${product.id}:`, e);
-                        return product.price || '0.00';
+                        const fallback = Math.round(Number(product.price) || 0)
+                        return fallback.toLocaleString('es-CO')
                       }
                     })()}
                   </p>
@@ -374,17 +387,17 @@ export default function ProductsPage() {
               {deleteStatus === "loading" ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                  Processing...
+                  Procesando...
                 </>
               ) : products.find((p) => p.id === confirmDelete)?.hasSales ? (
                 <>
                   <AlertTriangle className="mr-2 h-4 w-4" />
-                  Deactivate
+                  Desactivar
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  Eliminar
                 </>
               )}
             </Button>
@@ -395,8 +408,8 @@ export default function ProductsPage() {
                 <Check className="mr-2 h-4 w-4" />
                 <p>
                   {products.find((p) => p.id === confirmDelete)?.hasSales
-                    ? "Product deactivated successfully."
-                    : "Product deleted successfully."}
+                    ? "Producto desactivado exitosamente."
+                    : "Producto eliminado exitosamente."}
                 </p>
               </div>
             </div>
@@ -405,7 +418,7 @@ export default function ProductsPage() {
             <div className="mt-2 rounded-md bg-red-50 p-3 text-red-800 dark:bg-red-900/50 dark:text-red-300">
               <div className="flex items-center">
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                <p>An error occurred. Please try again.</p>
+                <p>Ocurrió un error. Por favor, inténtalo de nuevo.</p>
               </div>
             </div>
           )}

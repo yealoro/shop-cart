@@ -33,7 +33,7 @@ export default function AnnouncementBanner({
   if (messages.length === 0) return null;
 
   return (
-    <div className="w-full bg-black text-white overflow-hidden">
+    <div className="w-full bg-gray-300 text-black font-extrabold  overflow-hidden">
       <div className="relative h-full">
         <div 
           className={`text-center py-2 text-xs font-medium tracking-wider px-4 transition-all duration-500 ease-in-out ${

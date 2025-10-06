@@ -60,16 +60,32 @@ export default function ProductDetailPage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
+  const [selectedSize, setSelectedSize] = useState<string | undefined>(undefined);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
   const [newImageUrl, setNewImageUrl] = useState("");
   const [newImageAlt, setNewImageAlt] = useState("");
   const [newImageOrder, setNewImageOrder] = useState<number | "">("");
-  // Colores y tallas de ejemplo (reemplazar con datos reales del producto)
-  const availableColors = ["white", "black", "blue"];
-  const availableSizes = ["S", "M", "L", "XL"];
+  // Variantes disponibles derivadas del producto (si no existen, no se requieren)
+  const availableColors = (product?.colors ?? []).filter(Boolean);
+  const availableSizes = (product?.sizes ?? []).filter(Boolean);
+  const requiresColor = availableColors.length > 0;
+  const requiresSize = availableSizes.length > 0;
+
+  useEffect(() => {
+    // Autoselección cuando solo hay una opción y limpieza si no se requieren
+    if (requiresColor) {
+      if (availableColors.length === 1) setSelectedColor(availableColors[0]);
+    } else {
+      setSelectedColor(undefined);
+    }
+    if (requiresSize) {
+      if (availableSizes.length === 1) setSelectedSize(availableSizes[0]);
+    } else {
+      setSelectedSize(undefined);
+    }
+  }, [requiresColor, availableColors, requiresSize, availableSizes]);
 
   useEffect(() => {
     async function fetchProductDetails() {
@@ -148,8 +164,12 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
     
-    if (!selectedColor || !selectedSize) {
-      toast.error("Please select color and size");
+    if ((requiresColor && !selectedColor) || (requiresSize && !selectedSize)) {
+      const missing = [
+        requiresColor && !selectedColor ? "color" : null,
+        requiresSize && !selectedSize ? "talla" : null,
+      ].filter(Boolean).join(" y ");
+      toast.error(`Por favor selecciona ${missing}`);
       return;
     }
     
@@ -159,8 +179,12 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (!product) return;
     
-    if (!selectedColor || !selectedSize) {
-      toast.error("Please select color and size");
+    if ((requiresColor && !selectedColor) || (requiresSize && !selectedSize)) {
+      const missing = [
+        requiresColor && !selectedColor ? "color" : null,
+        requiresSize && !selectedSize ? "talla" : null,
+      ].filter(Boolean).join(" y ");
+      toast.error(`Por favor selecciona ${missing}`);
       return;
     }
     
@@ -379,12 +403,12 @@ export default function ProductDetailPage() {
             
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-6">
-              <p className={`text-2xl font-bold ${hasDiscount ? 'text-red-600' : 'text-primary'}`}>
-                ${finalPrice.toFixed(2)}
+              <p className={`text-2xl font-bold ${hasDiscount ? 'text-green-600' : 'text-primary'}`}>
+                ${Math.round(finalPrice).toLocaleString('es-CO')}
               </p>
               {hasDiscount && (
                 <p className="text-lg text-muted-foreground line-through">
-                  ${originalPrice.toFixed(2)}
+                  ${Math.round(originalPrice).toLocaleString('es-CO')}
                 </p>
               )}
             </div>
@@ -394,54 +418,58 @@ export default function ProductDetailPage() {
               <p>{product?.description || "No description available."}</p>
             </div>
             
-            {/* Color Selection */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-3">Color</h3>
-              <div className="flex gap-2">
-                {availableColors.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`w-8 h-8 rounded-full ${
-                      selectedColor === color ? 'ring-2 ring-offset-2 ring-primary' : ''
-                    }`}
-                    style={{ backgroundColor: color === 'white' ? '#f9fafb' : color }}
-                    onClick={() => handleColorSelect(color)}
-                    aria-label={`Color ${color}`}
-                  />
-                ))}
+            {/* Color Selection - solo si aplica */}
+            {requiresColor && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium mb-3">Color</h3>
+                <div className="flex gap-2">
+                  {availableColors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`w-8 h-8 rounded-full ${
+                        selectedColor === color ? 'ring-2 ring-offset-2 ring-primary' : ''
+                      }`}
+                      style={{ backgroundColor: color === 'white' ? '#f9fafb' : color }}
+                      onClick={() => handleColorSelect(color)}
+                      aria-label={`Color ${color}`}
+                    />
+                  ))}
+                </div>
+                {requiresColor && !selectedColor && (
+                  <p className="text-xs text-red-500 mt-1">Por favor selecciona un color</p>
+                )}
               </div>
-              {!selectedColor && (
-                <p className="text-xs text-red-500 mt-1">Please select a color</p>
-              )}
-            </div>
+            )}
             
-            {/* Size Selection */}
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-medium">Size</h3>
-                <button className="text-xs text-primary hover:underline">Size Guide</button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    className={`min-w-[3rem] h-10 px-3 border rounded-md flex items-center justify-center text-sm font-medium ${
-                      selectedSize === size 
-                        ? 'bg-primary text-primary-foreground border-primary' 
-                        : 'bg-background hover:bg-muted'
-                    }`}
-                    onClick={() => handleSizeSelect(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-              {!selectedSize && (
-                <p className="text-xs text-red-500 mt-1">Please select a size</p>
-              )}
-            </div>
+            {/* Size Selection - solo si aplica */}
+             {requiresSize && (
+               <div className="mb-6">
+                 <div className="flex justify-between items-center mb-3">
+                   <h3 className="text-sm font-medium">Size</h3>
+                   <button className="text-xs text-primary hover:underline">Size Guide</button>
+                 </div>
+                 <div className="flex flex-wrap gap-2">
+                   {availableSizes.map(size => (
+                     <button
+                       key={size}
+                       type="button"
+                       className={`min-w-[3rem] h-10 px-3 border rounded-md flex items-center justify-center text-sm font-medium ${
+                         selectedSize === size 
+                           ? 'bg-primary text-primary-foreground border-primary' 
+                           : 'bg-background hover:bg-muted'
+                       }`}
+                       onClick={() => handleSizeSelect(size)}
+                     >
+                       {size}
+                     </button>
+                   ))}
+                 </div>
+                 {requiresSize && !selectedSize && (
+                   <p className="text-xs text-red-500 mt-1">Por favor selecciona una talla</p>
+                 )}
+               </div>
+             )}
             
             {/* Stock Status */}
             <div className="mb-6">
@@ -464,7 +492,7 @@ export default function ProductDetailPage() {
               <Button
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 size="lg"
-                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || !selectedColor || !selectedSize}
+                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || (requiresColor && !selectedColor) || (requiresSize && !selectedSize)}
                 onClick={handleAddToCart}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -477,7 +505,7 @@ export default function ProductDetailPage() {
                 className="flex-1"
                 size="lg"
                 variant="outline"
-                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || !selectedColor || !selectedSize}
+                disabled={product?.active === false || (product?.stock ?? 0) <= 0 || (requiresColor && !selectedColor) || (requiresSize && !selectedSize)}
                 onClick={handleBuyNow}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">

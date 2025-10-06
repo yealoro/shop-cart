@@ -75,7 +75,7 @@ export default function Navigation() {
       <AnnouncementBanner messages={announcementMessages} interval={6000} />
       
       <header 
-        className="w-full py-4 px-4 sm:px-6 md:px-8 md:my-10 lg:px-52 flex items-center justify-between z-50">
+        className="bg-black text-white md:h-[130px] flex items-center justify-between shadow-xl">
       
         {/* Mobile Menu Button */}
         <button 
@@ -89,7 +89,7 @@ export default function Navigation() {
         {/* Left Nav - Search */}
         <div className="hidden md:flex items-center gap-8">
           {/* Main Navigation */}
-          <nav className="hidden md:flex gap-6 text-lg">
+          <nav className="hidden md:flex gap-6 text-lg ml-25">
             <Link href="/" className="hover:opacity-70 font-medium">Inicio</Link>
             <Link href="/categories/stickers" className="hover:opacity-70 font-medium">Stickers</Link>
             <Link href="/categories/camisetas" className="hover:opacity-70 font-medium">Camisetas</Link>
@@ -111,14 +111,14 @@ export default function Navigation() {
 
         {/* Right Nav */}
         <div className="flex items-center gap-4">
-          <nav className="hidden md:flex gap-6 text-lg">
+          <nav className="hidden md:flex gap-6 text-lg ">
             <Link href="/categories/mousepads" className="hover:opacity-70 font-medium">Mouse Pads</Link>
             <Link href="/about-us" className="hover:opacity-70 font-medium">Cuadros</Link>
             <Link href="/ara-vtuber" className="hover:opacity-70 font-medium">Sobre Nosotros</Link>
           </nav>
           
           {/* Account and Cart Icons - Visible on all screens */}
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center mr-25">
             <Link href="/login" aria-label="Account" className="text-xl">
               <AccountIcon />
             </Link>

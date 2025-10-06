@@ -164,12 +164,12 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="flex h-16 items-center px-6">
-          <h1 className="text-xl font-semibold">Categories</h1>
+          <h1 className="text-2xl font-semibold">Categorías</h1>
           <div className="ml-auto flex items-center gap-4">
             <Link href="/categories/create" passHref>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add New Category
+                Agrega una nueva categoría
               </Button>
             </Link>
           </div>
@@ -209,7 +209,7 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
           <div className="flex h-[400px] items-center justify-center">
             <div className="text-center">
               <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              <p className="text-muted-foreground">Loading categories...</p>
+              <p className="text-muted-foreground">Cargando categorías...</p>
             </div>
           </div>
         ) : filteredCategories.length === 0 ? (
@@ -340,13 +340,13 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
       <Dialog open={confirmDelete !== null} onOpenChange={(open) => !open && handleCancelDelete()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Category</DialogTitle>
+            <DialogTitle>Eliminar Categoría</DialogTitle>
             <DialogDescription>{deleteMessage}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={handleCancelDelete} disabled={deleteStatus === "loading"}>
               <X className="mr-2 h-4 w-4" />
-              Cancel
+              Cancelar
             </Button>
             <Button
             variant="destructive"
@@ -356,12 +356,12 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
             {deleteStatus === "loading" ? (
                 <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                Processing...
+                Procesando...
                 </>
             ) : (
                 <>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                Eliminar
                 </>
             )}
             </Button>
@@ -370,7 +370,7 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
             <div className="mt-2 rounded-md bg-green-50 p-3 text-green-800 dark:bg-green-900/50 dark:text-green-300">
               <div className="flex items-center">
                 <Check className="mr-2 h-4 w-4" />
-                <p>Category deleted successfully.</p>
+                <p>Categoría eliminada exitosamente.</p>
               </div>
             </div>
           )}
@@ -378,7 +378,7 @@ const hasProducts = (categoryToDelete?.products?.length ?? 0) > 0;
             <div className="mt-2 rounded-md bg-red-50 p-3 text-red-800 dark:bg-red-900/50 dark:text-red-300">
               <div className="flex items-center">
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                <p>An error occurred. Please try again.</p>
+                <p>Ocurrió un error. Por favor, inténtalo de nuevo.</p>
               </div>
             </div>
           )}
