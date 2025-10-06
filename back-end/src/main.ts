@@ -21,7 +21,7 @@ async function bootstrap() {
     app.use(urlencoded({ limit: '25mb', extended: true }));
 
     app.enableCors({
-      origin: ['http://localhost:3000', 'http://localhost:3300'],
+      origin: ['http://localhost:3000','http://localhost:3001','http://localhost:3002',  'http://localhost:3300'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],

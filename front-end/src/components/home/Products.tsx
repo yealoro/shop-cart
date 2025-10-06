@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { toast } from "sonner"
-import { ShoppingBag, HeartIcon, Search } from "lucide-react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -17,6 +14,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"; // Import pagination components
+import ProductCard from "@/components/ProductCard"
 
 // Define the Product interface based on your API's product structure
 interface Product {
@@ -77,7 +75,6 @@ export default function Products() {
       } catch (err: any) {
         console.error("Error fetching products:", err);
         setError(err.message || "No se pudieron cargar los productos. Por favor, inténtalo de nuevo más tarde.");
-        toast.error("Error al cargar productos.");
       } finally {
         setLoading(false);
       }
@@ -260,73 +257,9 @@ export default function Products() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {productsToDisplay.map((product) => { // Use productsToDisplay here
-              const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-              const discountValue = product.discountPercentage ?? (hasDiscount ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100) : 0);
-
-              return (
-                <Link 
-                  href={`/products/${product.slug || product.id}`} 
-                  key={product.id} 
-                  className="group"
-                >
-                  <Card className="overflow-hidden h-full transition-shadow duration-200 hover:shadow-lg border rounded-lg flex flex-col">
-                    <div className="relative">
-                      {/* Discount Badge */}
-                      {hasDiscount && discountValue > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute top-2 left-2 z-10 rounded-full px-2 py-0.5 text-xs"
-                        >
-                          -{discountValue}%
-                        </Badge>
-                      )}
-                      
-                      {/* Wishlist Button */}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-1 right-1 z-10 h-8 w-8 rounded-full bg-white/70 hover:bg-white dark:bg-black/50 dark:hover:bg-black"
-                        onClick={(e) => { e.preventDefault(); /* Add wishlist logic */ toast.info("Añadido a la lista de deseos (placeholder)"); }}
-                      >
-                        <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      </Button>
-                      
-                      {/* Product image */}
-                      <div className="aspect-square w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                        {product.imageUrl ? (
-                          <img
-                            src={product.imageUrl}
-                            alt={product.name}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/300x300?text=No+Image"; }}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-gray-300 dark:text-gray-600">
-                            <ShoppingBag className="h-12 w-12" /> {/* Placeholder Icon */}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-4 flex flex-col flex-grow">
-                      <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors duration-200 truncate mb-1">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-baseline mt-auto">
-                        {hasDiscount && product.originalPrice ? (
-                          <>
-                            <p className="text-gray-900 font-bold text-lg">${product.price.toFixed(2)}</p>
-                            <p className="text-sm text-muted-foreground line-through ml-2">${product.originalPrice.toFixed(2)}</p>
-                          </>
-                        ) : (
-                          <p className="text-gray-900 font-bold text-lg">${product.price.toFixed(2)}</p>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
+            {productsToDisplay.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         )}
 

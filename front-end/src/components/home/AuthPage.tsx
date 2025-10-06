@@ -109,6 +109,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
+        <img src="/logo.webp" alt="Deco House" className="w-30 h-30 mx-auto mb-10" />
         {/* Header */}
         <div className="text-center space-y-2">
           <p className="text-gray-600">
