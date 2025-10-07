@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X, ShoppingCart, User } from "lucide-react";
+
 import { useCart } from "@/context/CartContext";
 import AccountIcon from "./icon/AccountIcon";
 import CartIcon from "./icon/CartIcon";
@@ -11,12 +10,11 @@ import CloseIcon from "./icon/CloseIcon";
 import InstagramIcon from "./icon/InstagramIcon";
 import TiktokIcon from "./icon/TiktokIcon";
 import AnnouncementBanner from "./AnnouncementBanner";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuContent, NavigationMenuTrigger, NavigationMenuLink } from "@/components/ui/navigation-menu";
 
 export default function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const pathname = usePathname();
   const { getItemCount } = useCart();
   
   // Add this useEffect to handle client-side mounting
@@ -44,26 +42,7 @@ export default function Navigation() {
     };
   }, [isMenuOpen]);
   
-  useEffect(() => {
-    const handleScroll = () => {
-      // Detectar cuando el scroll ha superado cierta altura
-      if (window.scrollY > 150) {
-        setIsScrolled(true);
-        const spacer = document.getElementById('nav-spacer');
-        if (spacer) spacer.classList.remove('hidden');
-      } else {
-        setIsScrolled(false);
-        const spacer = document.getElementById('nav-spacer');
-        if (spacer) spacer.classList.add('hidden');
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -75,81 +54,90 @@ export default function Navigation() {
       <AnnouncementBanner messages={announcementMessages} interval={6000} />
       
       <header 
-        className="bg-black text-white md:h-[130px] flex items-center justify-between shadow-xl">
-      
-        {/* Mobile Menu Button */}
-        <button 
-          className="md:hidden flex items-center" 
-          onClick={toggleMenu}
-          aria-label="Toggle menu"
-        >
-          <MenuIcon />
-        </button>
-
-        {/* Left Nav - Search */}
-        <div className="hidden md:flex items-center gap-8">
-          {/* Main Navigation */}
-          <nav className="hidden md:flex gap-6 text-lg ml-25">
-            <Link href="/" className="hover:opacity-70 font-medium">Inicio</Link>
-            <Link href="/categories/stickers" className="hover:opacity-70 font-medium">Stickers</Link>
-            <Link href="/categories/camisetas" className="hover:opacity-70 font-medium">Camisetas</Link>
-          </nav>
-        </div>
-
-        {/* Logo Center */}
-        <Link href="/" className="mx-auto md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
-          <div className="relative">
-            <img 
-              src="/logo.webp" 
-              alt="Deco House Logo" 
-              width={100} 
-              height={40}
-              className="w-[60px] h-[60px] md:w-[85px] md:h-[85px]"
-            />
-          </div>
+        className="bg-white text-black h-20 md:h-[100px] flex items-center justify-between shadow-sm border-b">
+        {/* Center - Logo */}
+        <Link href="/" className="flex items-center justify-start md:justify-center pl-4 md:pl-0">
+          <img 
+            src="/logo.webp" 
+            alt="Deco House Logo" 
+            className="block w-[40px] h-[40px] md:w-[85px] md:h-[85px] md:my-2 md:ml-10 ml-0"
+          />
         </Link>
-
-        {/* Right Nav */}
-        <div className="flex items-center gap-4">
-          <nav className="hidden md:flex gap-6 text-lg ">
-            <Link href="/categories/mousepads" className="hover:opacity-70 font-medium">Mouse Pads</Link>
-            <Link href="/about-us" className="hover:opacity-70 font-medium">Cuadros</Link>
-            <Link href="/ara-vtuber" className="hover:opacity-70 font-medium">Sobre Nosotros</Link>
-          </nav>
-          
-          {/* Account and Cart Icons - Visible on all screens */}
-          <div className="flex gap-4 items-center mr-25">
-            <Link href="/login" aria-label="Account" className="text-xl">
-              <AccountIcon />
-            </Link>
-            <Link href="/cart" className="text-xl relative">
-              <CartIcon />
-              {/* Only render the badge on the client after component has mounted */}
-              {isMounted && getItemCount() > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  {getItemCount()}
-                </span>
-              )}
-            </Link>
-          </div>
+        {/* Left - NavigationMenu (desktop) */}
+        <div className="hidden md:flex items-center gap-6 pl-6">
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild className="font-medium">
+                  <Link href="/">Inicio</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>Categorías</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="grid gap-2 p-4 md:w-[400px] lg:w-[500px]">
+                    <NavigationMenuLink asChild className="font-medium">
+                      <Link href="/categories/stickers">Stickers</Link>
+                    </NavigationMenuLink>
+                    <NavigationMenuLink asChild className="font-medium">
+                      <Link href="/categories/camisetas">Camisetas</Link>
+                    </NavigationMenuLink>
+                    <NavigationMenuLink asChild className="font-medium">
+                      <Link href="/categories/mousepads">Mouse Pads</Link>
+                    </NavigationMenuLink>
+                    <NavigationMenuLink asChild className="font-medium">
+                      <Link href="/about-us">Cuadros</Link>
+                    </NavigationMenuLink>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild className="font-medium">
+                  <Link href="/ara-vtuber">Sobre Nosotros</Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+        {/* Right - icons */}
+        <div className="flex items-center gap-4 pr-6 md:mr-10">
+          <button 
+            className="md:hidden flex items-center" 
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            <MenuIcon />
+          </button>
+          <Link href="/login" aria-label="Account" className="text-xl">
+            <AccountIcon />
+          </Link>
+          <Link href="/cart" className="text-xl relative">
+            <CartIcon />
+            {isMounted && getItemCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                {getItemCount()}
+              </span>
+            )}
+          </Link>
         </div>
       </header>
 
-      {/* Mobile Menu Overlay - REWRITTEN */}
+      {/* Mobile Menu Overlay */}
       <div 
+        role="dialog" aria-modal="true"
         className={`fixed inset-0 bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
           isMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b h-[64px]">
           {/* Logo inside mobile menu */}
           <Link href="/" className="flex-shrink-0" onClick={() => setIsMenuOpen(false)}>
             <img 
               src="/logo.webp" 
               alt="Deco House Logo" 
-              width={80} 
-              height={32}
-              className="w-[60px] h-[60px]" // Smaller logo for mobile menu
+              width={60} 
+              height={60}
+              className="w-[48px] h-[48px]"
             />
           </Link>
           {/* Close Button */}
@@ -161,57 +149,28 @@ export default function Navigation() {
             <CloseIcon />
           </button>
         </div>
-        <nav className="flex flex-col p-4 overflow-y-auto h-[calc(100%-64px)]"> {/* Adjust height based on header height */}
-          <Link 
-            href="/" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+        <nav className="flex flex-col p-4 overflow-y-auto h-[calc(100%-64px)]" aria-label="Mobile Navigation">
+          <Link href="/" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Inicio
           </Link>
-          <Link 
-            href="/categories/stickers" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/categories/stickers" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Stickers
           </Link>
-          <Link 
-            href="/categories/camisetas" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/categories/camisetas" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Camisetas
           </Link>
-          <Link 
-            href="/categories/mousepads" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/categories/mousepads" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Mouse Pads
           </Link>
-          <Link 
-            href="/about-us" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/about-us" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Sobre Nosotros
           </Link>
-          <Link 
-            href="/ara-vtuber" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/ara-vtuber" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Ara Vtuber
           </Link>
-          <Link 
-            href="/login" 
-            className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
+          <Link href="/login" className="py-3 border-b text-base font-medium text-gray-800 hover:bg-gray-50 transition-colors" onClick={() => setIsMenuOpen(false)}>
             Iniciar Sesión
           </Link>
-          
           {/* Social Media Icons */}
           <div className="flex justify-center gap-6 mt-8 p-4">
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-pink-500 transition-colors">

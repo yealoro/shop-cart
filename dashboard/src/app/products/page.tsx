@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Plus, Edit, Trash2, AlertTriangle, Check, X, ShoppingBag } from "lucide-react"
 import { toast } from "sonner"
@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Pagination,
   PaginationContent,
@@ -51,6 +52,16 @@ export default function ProductsPage() {
   const [deleteMessage, setDeleteMessage] = useState("")
   const [deleteStatus, setDeleteStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [searchQuery, setSearchQuery] = useState("")
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<number | "all">("all")
+  const [onlyActive, setOnlyActive] = useState<boolean>(false)
+  const [onlyWithSales, setOnlyWithSales] = useState<boolean>(false)
+  // front-end like filters
+  const [minPrice, setMinPrice] = useState<string>("")
+  const [maxPrice, setMaxPrice] = useState<string>("")
+  const [sortBy, setSortBy] = useState<"none" | "price-asc" | "price-desc" | "name-asc" | "name-desc">("none")
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const itemsPerPage = 12
   
   useEffect(() => {
     async function fetchProducts() {
@@ -141,11 +152,48 @@ export default function ProductsPage() {
     setDeleteStatus("idle")
   }
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const processedProducts = useMemo(() => {
+    let list = products.filter(
+      (product) =>
+        (product.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.description || "").toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+
+    const min = minPrice !== "" ? Number(minPrice) : undefined
+    const max = maxPrice !== "" ? Number(maxPrice) : undefined
+    if (!Number.isNaN(min) && min !== undefined) {
+      list = list.filter((p) => Number(p.price ?? 0) >= min)
+    }
+    if (!Number.isNaN(max) && max !== undefined) {
+      list = list.filter((p) => Number(p.price ?? 0) <= max)
+    }
+
+    switch (sortBy) {
+      case "price-asc":
+        list = list.slice().sort((a, b) => Number(a.price ?? 0) - Number(b.price ?? 0))
+        break
+      case "price-desc":
+        list = list.slice().sort((a, b) => Number(b.price ?? 0) - Number(a.price ?? 0))
+        break
+      case "name-asc":
+        list = list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }))
+        break
+      case "name-desc":
+        list = list.slice().sort((a, b) => (b.name || "").localeCompare(a.name || "", undefined, { sensitivity: "base" }))
+        break
+      case "none":
+      default:
+        break
+    }
+
+    return list
+  }, [products, searchQuery, minPrice, maxPrice, sortBy])
+
+  const totalPages = Math.max(1, Math.ceil(processedProducts.length / itemsPerPage))
+  const pagedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return processedProducts.slice(start, start + itemsPerPage)
+  }, [processedProducts, currentPage])
 
   const getStatusBadge = (product: Product) => {
     if (product.active === false) {
@@ -215,6 +263,51 @@ export default function ProductsPage() {
           </div>
         </div>
 
+        {/* Price Range Filter and Sort By Filter */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          {/* Price Range Filter */}
+          <div className="flex-1 max-w-sm sm:max-w-xs flex gap-2">
+            <Input
+              type="number"
+              placeholder="Precio Mín."
+              value={minPrice}
+              onChange={(e) => {
+                setMinPrice(e.target.value);
+                setCurrentPage(1); // Reset to first page on price change
+              }}
+              className="w-1/2"
+            />
+            <Input
+              type="number"
+              placeholder="Precio Máx."
+              value={maxPrice}
+              onChange={(e) => {
+                setMaxPrice(e.target.value);
+                setCurrentPage(1); // Reset to first page on price change
+              }}
+              className="w-1/2"
+            />
+          </div>
+          {/* Sort By Filter */}
+          <div className="flex-1 max-w-sm sm:max-w-xs">
+            <Select onValueChange={(value) => {
+              setSortBy(value as "none" | "price-asc" | "price-desc" | "name-asc" | "name-desc");
+              setCurrentPage(1); // Reset to first page on sort change
+            }} defaultValue="none">
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Ordenar por..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin ordenar</SelectItem>
+                <SelectItem value="price-asc">Precio: Menor a Mayor</SelectItem>
+                <SelectItem value="price-desc">Precio: Mayor a Menor</SelectItem>
+                <SelectItem value="name-asc">Nombre: A-Z</SelectItem>
+                <SelectItem value="name-desc">Nombre: Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex h-[400px] items-center justify-center">
             <div className="text-center">
@@ -222,8 +315,7 @@ export default function ProductsPage() {
               <p className="text-muted-foreground">Cargando productos...</p>
             </div>
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        ) : processedProducts.length === 0 ? (          <div className="flex h-[400px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
             <h3 className="mt-4 text-lg font-semibold">No products found</h3>
             <p className="mb-4 mt-2 text-sm text-muted-foreground">
               {searchQuery ? "Try a different search term or" : "Get started by"} adding a new product.
@@ -237,8 +329,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {filteredProducts.map((product) => (
-              <Card
+            {pagedProducts.map((product) => (              <Card
                 key={product.id}
                 className={`group overflow-hidden transition-opacity ${product.active === false ? "opacity-60" : ""}`}
               >
@@ -338,26 +429,22 @@ export default function ProductsPage() {
         )}
 
         {/* Pagination */}
-        {filteredProducts.length > 0 && (
+        {processedProducts.length > 0 && (
           <div className="mt-6">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious href="#" />
+                  <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.max(1, p - 1)) }} />
                 </PaginationItem>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink href="#" isActive={currentPage === i + 1} onClick={(e) => { e.preventDefault(); setCurrentPage(i + 1) }}>
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
                 <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">2</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#">3</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
+                  <PaginationNext href="#" onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.min(totalPages, p + 1)) }} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>

@@ -17,6 +17,7 @@ type Product = {
   slug?: string
   originalPrice?: number
   discountPercentage?: number
+  discount?: number
   images?: { url: string }[]
 }
 
@@ -25,10 +26,17 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const hasDiscount = !!product.originalPrice && product.originalPrice > product.price
-  const discountValue = product.discountPercentage ?? (hasDiscount && product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0)
+  // Cálculo de precios consistente y soporte para descuento por monto
+  const originalPrice = Number(product.originalPrice ?? product.price ?? 0)
+  const basePrice = Number(product.price ?? 0)
+  const discountAmount = Number(product.discount ?? 0)
+  const finalPrice = discountAmount > 0
+    ? Math.max(0, originalPrice - discountAmount)
+    : (originalPrice > basePrice ? basePrice : originalPrice)
+  const effectiveHasDiscount = (discountAmount > 0 && finalPrice < originalPrice) || (originalPrice > basePrice)
+  const percent = effectiveHasDiscount && originalPrice > 0
+    ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100)
+    : 0
 
   return (
     <Link 
@@ -38,12 +46,12 @@ export default function ProductCard({ product }: ProductCardProps) {
       <Card className="overflow-hidden h-full transition-shadow duration-200 hover:shadow-lg border rounded-lg flex flex-col">
         <div className="relative">
           {/* Discount Badge */}
-          {hasDiscount && discountValue > 0 && (
+          {effectiveHasDiscount && percent > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute top-2 left-2 z-10 rounded-full px-2 py-0.5 text-xs"
             >
-              -{discountValue}%
+              -{percent}%
             </Badge>
           )}
           
@@ -91,13 +99,13 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
           <div className="flex items-baseline mt-auto">
-            {hasDiscount && product.originalPrice ? (
+            {effectiveHasDiscount ? (
               <>
-                <p className="text-gray-900 font-bold text-lg">${Math.round(Number(product.price)).toLocaleString('es-CO')}</p>
-                <p className="text-sm text-muted-foreground line-through ml-2">${Math.round(Number(product.originalPrice)).toLocaleString('es-CO')}</p>
+                <p className="text-green-600 font-bold text-lg">${Math.round(finalPrice).toLocaleString('es-CO')}</p>
+                <p className="text-sm text-muted-foreground line-through ml-2">${Math.round(originalPrice).toLocaleString('es-CO')}</p>
               </>
             ) : (
-              <p className="text-gray-900 font-bold text-lg">${Math.round(Number(product.price)).toLocaleString('es-CO')}</p>
+              <p className="text-gray-900 font-bold text-lg">${Math.round(finalPrice).toLocaleString('es-CO')}</p>
             )}
           </div>
         </div>
