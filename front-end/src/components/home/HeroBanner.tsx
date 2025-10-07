@@ -47,7 +47,7 @@ export default function HeroBanner() {
 
   return (
     <Carousel 
-      className="w-full h-80 md:h-[400px] mt-8 relative overflow-hidden"
+      className="w-full h-80 md:h-[400px] relative overflow-hidden"
       plugins={[autoplayPlugin.current]}
       setApi={setApi}
       opts={{
