@@ -54,13 +54,13 @@ export default function Navigation() {
       <AnnouncementBanner messages={announcementMessages} interval={6000} />
       
       <header 
-        className="bg-white text-black h-20 md:h-[100px] flex items-center justify-between shadow-sm border-b">
+        className="bg-white text-black h-20 md:h-[100px] flex items-center justify-between shadow-sm border-b lg:text-2xl">
         {/* Center - Logo */}
         <Link href="/" className="flex items-center justify-start md:justify-center pl-4 md:pl-0">
           <img 
             src="/logo.webp" 
             alt="Deco House Logo" 
-            className="block w-[40px] h-[40px] md:w-[85px] md:h-[85px] md:my-2 md:ml-10 ml-0"
+            className="block size-[55px] md:w-[85px] lg:size-20  md:h-[80px] md:my-5 md:ml-10"
           />
         </Link>
         {/* Left - NavigationMenu (desktop) */}
@@ -99,30 +99,7 @@ export default function Navigation() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        {/* Right - icons */}
-        <div className="flex items-center gap-4 pr-6 md:mr-10">
-          <button 
-            className="md:hidden flex items-center" 
-            onClick={toggleMenu}
-            aria-label="Toggle menu"
-          >
-            <MenuIcon />
-          </button>
-          <Link href="/login" aria-label="Account" className="text-xl">
-            <AccountIcon />
-          </Link>
-          <Link href="/cart" className="text-xl relative">
-            <CartIcon />
-            {isMounted && getItemCount() > 0 && (
-              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                {getItemCount()}
-              </span>
-            )}
-          </Link>
-        </div>
-      </header>
-
-      {/* Mobile Menu Overlay */}
+        {/* Mobile Menu Overlay */}
       <div 
         role="dialog" aria-modal="true"
         className={`fixed inset-0 bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
@@ -182,6 +159,29 @@ export default function Navigation() {
           </div>
         </nav>
       </div>
+        {/* Right - icons */}
+        <div className="flex items-center gap-4 pr-6 md:mr-10">
+          <button 
+            className="md:hidden flex items-center" 
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+          >
+            <MenuIcon />
+          </button>
+          <Link href="/login" aria-label="Account" className="text-xl">
+            <AccountIcon />
+          </Link>
+          <Link href="/cart" className="text-xl relative">
+            <CartIcon />
+            {isMounted && getItemCount() > 0 && (
+              <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                {getItemCount()}
+              </span>
+            )}
+          </Link>
+        </div>
+      </header>
+      
     </>
   );
 }
