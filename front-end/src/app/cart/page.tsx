@@ -19,15 +19,44 @@ export default function CartPage() {
   // Helper para mostrar precios como enteros (sin decimales)
   const formatCurrencyInt = (value: number | string) => Math.round(Number(value)).toLocaleString("es-CO");
 
+  const CO_IVA_STANDARD_RATE = 0.19;
+
+  const getItemTaxRate = (item: any) => {
+    if (item?.isTaxExempt || item?.taxExempt) return 0;
+    const rate = typeof item?.taxRate === "number" ? item.taxRate : CO_IVA_STANDARD_RATE;
+    return Math.max(0, rate);
+  };
+
+  const calculateIVA = () => {
+    return Math.round(
+      cartItems.reduce((acc, item: any) => {
+        const rate = getItemTaxRate(item);
+        const base = (+item.price) * item.quantity;
+        return acc + base * rate;
+      }, 0)
+    );
+  };
+
+  const ivaLabel = () => {
+    const rates = new Set<number>();
+    cartItems.forEach((item: any) => {
+      rates.add(getItemTaxRate(item));
+    });
+    if (rates.size === 1) {
+      const r = [...rates][0];
+      return `IVA (${Math.round(r * 100)}%)`;
+    }
+    return "IVA";
+  };
+
+  const subtotal = getCartTotal();
+  const ivaAmount = calculateIVA();
+  const totalWithTax = subtotal + ivaAmount;
+
   const handleCheckout = () => {
     setIsCheckingOut(true);
-    // Simulate checkout process
-    setTimeout(() => {
-      toast.success("¡Pedido realizado con éxito!"); // Translated toast message
-      clearCart();
-      router.push("/checkout/success");
-      setIsCheckingOut(false);
-    }, 2000);
+    toast.info("Redirigiendo al checkout...");
+    router.push("/checkout");
   };
 
   return (
@@ -177,22 +206,22 @@ export default function CartPage() {
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${formatCurrencyInt(getCartTotal())}</span>
+                    <span>${formatCurrencyInt(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Envío</span>
                     <span>Calculado al finalizar la compra</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Impuestos</span>
-                    <span>Calculado al finalizar la compra</span>
+                    <span className="text-muted-foreground">{ivaLabel()}</span>
+                    <span>${formatCurrencyInt(ivaAmount)}</span>
                   </div>
                 </div>
                 
                 <div className="border-t pt-4 mb-6">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${formatCurrencyInt(getCartTotal())}</span>
+                    <span>${formatCurrencyInt(totalWithTax)}</span>
                   </div>
                 </div>
                 
